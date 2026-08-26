@@ -38,6 +38,19 @@ function MysteryBall({ dark = false }: { dark?: boolean }) {
   );
 }
 
+function ExactPickBall({ className = '' }: { className?: string }) {
+  return (
+    <img
+      className={`exact-pick-ball ${className}`}
+      src="/assets/figma/pick/mystery-ball-complete.svg"
+      width="110"
+      height="134"
+      alt=""
+      aria-hidden="true"
+    />
+  );
+}
+
 function LockMark() {
   return <span className="lock-mark" aria-label="Locked"><i /></span>;
 }
@@ -90,16 +103,17 @@ function PickBallScreen() {
         <p className="subcopy">One holds Scout.<br />Two hold nothing.</p>
       </div>
       <div className="ball-row">
-        <MysteryBall /><MysteryBall /><MysteryBall />
+        <ExactPickBall /><ExactPickBall /><ExactPickBall />
       </div>
-      <p className="tap-label">TAP TO PICK</p>
+      <img className="tap-label-svg" src="/assets/figma/pick/tap-to-pick.svg" width="70" height="9" alt="Tap to pick" />
       <div className="scout-explainer">
-        <ScoutEye compact />
-        <span className="scout-explainer__label">Scout</span>
-        <i className="scout-explainer__dot" />
-        <span className="scout-explainer__description">see their hidden VyralScore</span>
-        <i className="scout-explainer__dot" />
-        <b>this round only</b>
+        <img className="scout-explainer__shell" src="/assets/figma/pick/explainer-pill.svg" width="339" height="38" alt="" aria-hidden="true" />
+        <img className="scout-explainer__eye" src="/assets/figma/pick/compact-eye.svg" width="13" height="13" alt="" aria-hidden="true" />
+        <img className="scout-explainer__label" src="/assets/figma/pick/explainer-scout.svg" width="32" height="9" alt="Scout" />
+        <img className="scout-explainer__dot scout-explainer__dot--one" src="/assets/figma/pick/separator-dot-a.svg" width="2" height="2" alt="" aria-hidden="true" />
+        <img className="scout-explainer__description" src="/assets/figma/pick/explainer-see-score.svg" width="152" height="11" alt="See their hidden VyralScore" />
+        <img className="scout-explainer__dot scout-explainer__dot--two" src="/assets/figma/pick/separator-dot-b.svg" width="2" height="2" alt="" aria-hidden="true" />
+        <img className="scout-explainer__round" src="/assets/figma/pick/explainer-this-round.svg" width="82" height="11" alt="This round only" />
       </div>
     </Phone>
   );
@@ -195,7 +209,7 @@ function AssetBoard() {
   return (
     <div className="asset-board">
       <div className="asset-cell asset-cell--dark"><ScoutEye /><span>Scout core</span></div>
-      <div className="asset-cell asset-cell--dark"><MysteryBall /><span>Mystery ball</span></div>
+      <div className="asset-cell asset-cell--dark"><ExactPickBall className="exact-pick-ball--board" /><span>Exact mystery ball</span></div>
       <div className="asset-cell asset-cell--dark"><MysteryBall dark /><span>Nothing ball</span></div>
       <div className="asset-cell asset-cell--dark asset-cell--rings"><span className="burst-ring burst-ring--one" /><span className="burst-ring burst-ring--two" /><span>Burst rings</span></div>
       <div className="asset-cell asset-cell--type">
@@ -243,18 +257,37 @@ function Comparison({ number, title, nodeId, specs, children, asset = false }: {
 }
 
 const assetAudit = [
+  { element: 'Selection-state compact eye', source: 'Figma vector · 13 × 13 · two 1.6px rounded strokes', format: 'SVG', status: 'Exact' },
+  { element: 'Selection-state explainer copy', source: 'Scout · hidden VyralScore · this round only · two separator dots', format: '6 SVGs', status: 'Exact' },
+  { element: 'Selection-state explainer shell', source: 'Figma vector · 339 × 38 · original fill, stroke, and radius', format: 'SVG', status: 'Exact' },
+  { element: 'Tap to Pick label', source: 'Figma outlined type · 70 × 9 · white/40%', format: 'SVG', status: 'Exact' },
   { element: 'Scout eye outline', source: 'Figma vector · 48.4 × 31.46 · 4.356px #FFF stroke', format: 'SVG', status: 'Exact' },
   { element: 'Scout eye pupil', source: 'Figma vector · 12.584 × 12.584 · #FFF fill', format: 'SVG', status: 'Exact' },
-  { element: 'Scout glow ball', source: '280 × 280 group at 61,134 · 170px core · 92px glow · 58 × 32 highlight · 9 vector/effect layers', format: 'SVG + CSS', status: 'Measured' },
-  { element: 'Mystery balls', source: '108 × 132.84 groups at x 19, 147, 275 · 1.5px white/20% border · gradients and highlights', format: 'SVG + CSS', status: 'Measured' },
-  { element: 'Nothing ball', source: '170 × 170 at 116,200 · 1.5px white/25% border · dark gradients and shadow', format: 'SVG + CSS', status: 'Measured' },
-  { element: 'Burst rings', source: '460px #6FB04A/6% · 350px/15% · 250px/30% · 1px centered borders', format: 'SVG', status: 'Exact geometry' },
+  { element: 'Scout glow ball', source: '280 × 280 group at 61,134 · 170px core · 92px glow · 58 × 32 highlight · 9 vector/effect layers', format: 'SVG + CSS', status: 'Awaiting export' },
+  { element: 'Mystery balls', source: 'Exact 110 × 134 Figma export · 8 radial layers · shadow · highlight · question glyph', format: 'SVG', status: 'Exact' },
+  { element: 'Nothing ball', source: '170 × 170 at 116,200 · 1.5px white/25% border · dark gradients and shadow', format: 'SVG + CSS', status: 'Awaiting export' },
+  { element: 'Burst rings', source: '460px #6FB04A/6% · 350px/15% · 250px/30% · 1px centered borders', format: 'SVG', status: 'Awaiting export' },
   { element: 'Background lights', source: 'Radial glow and falloff layers across all three screens', format: 'CSS gradients', status: 'Mapped' },
   { element: 'iPhone chrome', source: 'Status bar component + Home Indicator shape', format: 'Component', status: 'Mapped' },
   { element: 'Typography + labels', source: 'SF Pro text layers for Pick, Scout, Nothing, and supporting copy', format: 'Live text', status: 'Mapped' },
   { element: 'Result CTAs', source: 'Primary green and muted dark Start Round 1 frames', format: 'CSS', status: 'Mapped' },
-  { element: 'Scout explainer pill', source: 'Outlined pill + compact eye + explanatory text', format: 'CSS + SVG', status: 'Mapped' },
+  { element: 'Scout explainer pill', source: 'Original pill, eye, two dots, and all three outlined text layers', format: '7 SVGs', status: 'Exact' },
 ];
+
+const exactPickAssets = [
+  ['Compact eye vector', 'compact-eye-vector.svg'],
+  ['Compact eye group', 'compact-eye.svg'],
+  ['Separator dot A', 'separator-dot-a.svg'],
+  ['Separator dot B', 'separator-dot-b.svg'],
+  ['Scout label', 'explainer-scout.svg'],
+  ['Hidden-score label', 'explainer-see-score.svg'],
+  ['This-round label', 'explainer-this-round.svg'],
+  ['Explainer shell', 'explainer-pill.svg'],
+  ['Tap to Pick', 'tap-to-pick.svg'],
+  ['Complete mystery ball', 'mystery-ball-complete.svg'],
+  ['Question glyph', 'question-mark.svg'],
+  ['Ball outline', 'mystery-ball-outline.svg'],
+] as const;
 
 function AssetAudit() {
   return (
@@ -279,19 +312,25 @@ function AssetAudit() {
       <div className="exact-asset-callout">
         <div className="exact-asset-preview"><ScoutEye /></div>
         <div>
-          <p className="kicker">PICK A BALL SVG PACKAGE</p>
-          <h3>Vector assets</h3>
-          <p>The eye files use the supplied Figma paths exactly. The rings and ball files are reconstructed from the measured Figma vector layers, gradients, borders, positions, and opacity values.</p>
+          <p className="kicker">VERIFIED SVG PACKAGE · 12 ORIGINAL EXPORTS</p>
+          <h3>Exact Pick-a-Ball selection assets</h3>
+          <p>Your latest paste has been separated into its original Figma files and is now used directly in the selection screen: the full layered mystery ball, compact eye, explainer shell, separators, outlined labels, and Tap to Pick artwork. Scout-result and Nothing-result artwork remain clearly marked until their exports are supplied.</p>
           <div className="asset-links">
-            <a href="/assets/scout-eye.svg">Exact eye</a>
-            <a href="/assets/scout-eye-outline.svg">Exact outline</a>
-            <a href="/assets/scout-eye-pupil.svg">Exact pupil</a>
-            <a href="/assets/scout-burst-rings.svg">Burst rings</a>
-            <a href="/assets/scout-result-ball.svg">Scout ball</a>
-            <a href="/assets/mystery-ball.svg">Mystery ball</a>
-            <a href="/assets/nothing-ball.svg">Nothing ball</a>
+            <a href="/assets/figma/pick/mystery-ball-complete.svg">Mystery ball</a>
+            <a href="/assets/figma/pick/compact-eye.svg">Compact eye</a>
+            <a href="/assets/figma/pick/explainer-pill.svg">Explainer shell</a>
+            <a href="/assets/figma/pick/tap-to-pick.svg">Tap to Pick</a>
           </div>
         </div>
+      </div>
+      <div className="exact-source-grid" aria-label="Twelve exact SVG exports from Figma">
+        {exactPickAssets.map(([label, file]) => (
+          <a href={`/assets/figma/pick/${file}`} key={file}>
+            <span><img src={`/assets/figma/pick/${file}`} alt="" aria-hidden="true" /></span>
+            <strong>{label}</strong>
+            <small>{file}</small>
+          </a>
+        ))}
       </div>
     </section>
   );
