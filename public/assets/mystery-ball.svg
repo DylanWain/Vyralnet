@@ -1,0 +1,10 @@
+<svg width="108" height="108" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="base" cx="0" cy="0" r="1" gradientTransform="translate(48 43) rotate(90) scale(62)"><stop stop-color="#4A5537"/><stop offset=".42" stop-color="#26301F"/><stop offset=".75" stop-color="#11160E"/><stop offset="1" stop-color="#050704"/></radialGradient>
+    <radialGradient id="shine" cx="0" cy="0" r="1" gradientTransform="translate(42 28) rotate(120) scale(30 48)"><stop stop-color="white" stop-opacity=".34"/><stop offset="1" stop-color="white" stop-opacity="0"/></radialGradient>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="210%"><feDropShadow dx="0" dy="16" stdDeviation="15" flood-color="black" flood-opacity=".65"/></filter>
+  </defs>
+  <circle cx="54" cy="54" r="53.25" fill="url(#base)" stroke="white" stroke-opacity=".2" stroke-width="1.5" filter="url(#shadow)"/>
+  <circle cx="54" cy="54" r="49" fill="url(#shine)" stroke="#C2DD97" stroke-opacity=".08"/>
+  <text x="54" y="64" text-anchor="middle" fill="white" fill-opacity=".45" font-family="SF Pro, Arial, sans-serif" font-size="28" font-weight="600">?</text>
+</svg>
