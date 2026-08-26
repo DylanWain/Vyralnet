@@ -302,6 +302,9 @@ function MatchScreen({
   const hasScout = scoutState !== 'unavailable';
   return (
     <Phone className={`phone--match phone--scout-${scoutState}${confirmation ? ' phone--blurred' : ''}`}>
+      <button className="leave-round-button" type="button" onClick={onNewRound} aria-label="Leave Round 1 and return to Pick a Ball">
+        <span aria-hidden="true">×</span> Leave Round
+      </button>
       <BracketHeader />
       <MatchCard revealed={revealed} secondsRemaining={secondsRemaining} />
       <span className="lower-bracket-line" />
