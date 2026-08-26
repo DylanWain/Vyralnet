@@ -112,12 +112,13 @@ function ProfileAvatar({ variant = 'you' }: { variant?: 'you' | 'opponent' }) {
 
 function ScoutBadge({ count = 1 }: { count?: number }) {
   return (
-    <div className="scout-badge">
-      <div className="scout-badge__orb">
-        <ScoutEye compact />
-        <span className="scout-count">{count}</span>
-      </div>
-      <span>SCOUT</span>
+    <div className="scout-badge" aria-label={`Scout power-up, ${count} available`}>
+      <img className="scout-badge__orb" src="/assets/figma/scout-dock/orb.svg" width="118" height="118" alt="" aria-hidden="true" />
+      <img className="scout-badge__highlight" src="/assets/figma/scout-dock/highlight.svg" width="50" height="49" alt="" aria-hidden="true" />
+      <img className="scout-badge__eye" src="/assets/figma/scout-dock/eye.svg" width="20" height="15" alt="" aria-hidden="true" />
+      <img className="scout-badge__label" src="/assets/figma/scout-dock/label-scout.svg" width="39" height="9" alt="" aria-hidden="true" />
+      <img className="scout-badge__count-glow" src="/assets/figma/scout-dock/count-glow.svg" width="47" height="47" alt="" aria-hidden="true" />
+      {count === 1 && <img className="scout-badge__count" src="/assets/figma/scout-dock/count-1.svg" width="3" height="6" alt="" aria-hidden="true" />}
     </div>
   );
 }
@@ -175,7 +176,8 @@ function ResultScreen({ result }: { result: 'scout' | 'nothing' }) {
         <div className="result-copy">
           <p>YOU PULLED</p>
           <h3>Scout</h3>
-          <span>Their hidden VyralScore. 60 seconds.<br /><b>This round only. Spend it well.</b></span>
+          <span className="result-copy__regular">Their hidden VyralScore. 60 seconds.</span>
+          <strong className="result-copy__bold">This round only. Spend it well.</strong>
         </div>
       ) : (
         <div className="exact-nothing-copy">
@@ -273,6 +275,7 @@ function AssetBoard() {
       <div className="asset-cell asset-cell--dark"><ExactPickBall className="exact-pick-ball--board" /><span>Exact mystery ball</span></div>
       <div className="asset-cell asset-cell--dark"><ExactNothingBall className="exact-nothing-ball--board" /><span>Exact Nothing ball</span></div>
       <div className="asset-cell asset-cell--dark asset-cell--rings"><img src="/assets/figma/scout/burst-ring-middle.svg" alt="" /><img src="/assets/figma/scout/burst-ring-inner.svg" alt="" /><span>Exact burst rings</span></div>
+      <div className="asset-cell asset-cell--dark asset-cell--dock"><ScoutBadge /><span>Exact docked Scout power-up</span></div>
       <div className="asset-cell asset-cell--type">
         <p className="eyebrow">ROUND 1 BEGINS</p><h3>Pick a ball.</h3><span>SF Pro hierarchy</span>
       </div>
@@ -335,7 +338,8 @@ const assetAudit = [
   { element: 'iPhone home indicator', source: 'Home Indicator component geometry', format: 'Component', status: 'Mapped' },
   { element: 'Pick-screen typography', source: 'Title and two-line supporting copy exported as original outlined SF Pro paths; eyebrow remains exact Figma-inspected 12/700/100% at its mapped position and color', format: '2 SVGs + live label', status: 'Exact' },
   { element: 'Scout result CTA + footer', source: 'Original green base, highlight, outlined Start Round 1 text, and outlined footer copy', format: '4 SVGs', status: 'Exact' },
-  { element: 'Scout result title + body', source: 'SF Pro text layers; exact geometry mapped, awaiting outlined text export for platform-independent contours', format: 'Live text', status: 'Mapped' },
+  { element: 'Scout result title + body', source: 'View-mode properties: title 52/700 at 128,473.09; body 15.5/400 and 15.5/700 at 565 and 592; eyebrow 12/700 at 165,457.09', format: 'Exact live type', status: 'Exact' },
+  { element: 'Docked Scout power-up', source: '58 × 75 group at 314,731 in the match frame; original orb, highlight, eye, label, count glow, and count glyph', format: '6 SVGs', status: 'Exact' },
   { element: 'Nothing result typography + CTA', source: 'Original outlined YOU PULLED, title, both body lines, muted button shell/label, and footer copy', format: '8 SVGs', status: 'Exact' },
   { element: 'Scout explainer pill', source: 'Original pill, eye, two dots, and all three outlined text layers', format: '7 SVGs', status: 'Exact' },
 ];
@@ -404,6 +408,15 @@ const exactNothingAssets = [
   ['Pick support copy', 'pick-support-copy.svg'],
 ] as const;
 
+const exactScoutDockAssets = [
+  ['Scout dock orb', 'orb.svg'],
+  ['Scout dock highlight', 'highlight.svg'],
+  ['Scout dock eye', 'eye.svg'],
+  ['Scout dock label', 'label-scout.svg'],
+  ['Scout count glow', 'count-glow.svg'],
+  ['Scout count glyph', 'count-1.svg'],
+] as const;
+
 function AssetAudit() {
   return (
     <section className="comparison-section audit-section">
@@ -427,9 +440,9 @@ function AssetAudit() {
       <div className="exact-asset-callout">
         <div className="exact-asset-preview"><ScoutEye /></div>
         <div>
-          <p className="kicker">VERIFIED SVG PACKAGE · 55 ORIGINAL EXPORTS</p>
+          <p className="kicker">VERIFIED SVG PACKAGE · 61 ORIGINAL EXPORTS</p>
           <h3>Exact Pick-a-Ball, Scout, and Nothing assets</h3>
-          <p>The supplied Figma exports are separated into their original files. The Pick screen uses exact ball, compact-eye, explainer, status-bar, title, and supporting-copy artwork. Scout uses its layered core, rings, CTA, and footer; Nothing now uses its original layered ball and every outlined result-screen label.</p>
+          <p>The supplied Figma exports are separated into their original files. The Pick screen uses exact ball, compact-eye, explainer, status-bar, title, and supporting-copy artwork. Scout uses its layered award core, rings, CTA, footer, and six-layer docked power-up badge; Nothing uses its original layered ball and every outlined result-screen label.</p>
           <div className="asset-links">
             <a href="/assets/figma/pick/mystery-ball-complete.svg">Mystery ball</a>
             <a href="/assets/figma/pick/compact-eye.svg">Compact eye</a>
@@ -438,6 +451,7 @@ function AssetAudit() {
             <a href="/assets/figma/scout/core-outer-glow.svg">Scout core</a>
             <a href="/assets/figma/scout/burst-ring-outer.svg">Burst rings</a>
             <a href="/assets/figma/scout/cta-label.svg">Scout CTA</a>
+            <a href="/assets/figma/scout-dock/orb.svg">Docked Scout</a>
             <a href="/assets/figma/nothing/title-nothing.svg">Nothing title</a>
             <a href="/assets/figma/nothing/ball-glass.svg">Nothing ball</a>
           </div>
@@ -465,6 +479,15 @@ function AssetAudit() {
         {exactNothingAssets.map(([label, file]) => (
           <a href={`/assets/figma/nothing/${file}`} key={file}>
             <span><img src={`/assets/figma/nothing/${file}`} alt="" aria-hidden="true" /></span>
+            <strong>{label}</strong>
+            <small>{file}</small>
+          </a>
+        ))}
+      </div>
+      <div className="exact-source-grid" aria-label="Six exact docked Scout SVG exports from Figma">
+        {exactScoutDockAssets.map(([label, file]) => (
+          <a href={`/assets/figma/scout-dock/${file}`} key={file}>
+            <span><img src={`/assets/figma/scout-dock/${file}`} alt="" aria-hidden="true" /></span>
             <strong>{label}</strong>
             <small>{file}</small>
           </a>
