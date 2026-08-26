@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 const FIGMA_FILE =
   'https://embed.figma.com/design/90sjA2iJxWs1XqRogzXv3r/Vyralnet-Game-Design';
@@ -141,7 +141,15 @@ function Phone({ children, className = '' }: { children: ReactNode; className?: 
   );
 }
 
-function PickBallScreen({ onPick, selectedBall = null }: { onPick?: (index: number) => void; selectedBall?: number | null }) {
+function PickBallScreen({
+  onPick,
+  selectedBall = null,
+  resolving = false,
+}: {
+  onPick?: (index: number) => void;
+  selectedBall?: number | null;
+  resolving?: boolean;
+}) {
   return (
     <Phone className="phone--power-balls">
       <img className="pick-background-light" src="/assets/figma/pick/background-light.svg" width="402" height="700" alt="" aria-hidden="true" />
@@ -153,9 +161,10 @@ function PickBallScreen({ onPick, selectedBall = null }: { onPick?: (index: numb
       <div className="ball-row">
         {[0, 1, 2].map((index) => onPick ? (
           <button
-            className={`pick-ball-button${selectedBall === index ? ' pick-ball-button--selected' : ''}`}
+            className={`pick-ball-button${selectedBall === index ? ' pick-ball-button--selected' : ''}${resolving && selectedBall !== index ? ' pick-ball-button--dimmed' : ''}`}
             type="button"
             onClick={() => onPick(index)}
+            disabled={resolving}
             aria-label={`Pick ball ${index + 1}`}
             key={index}
           >
@@ -237,8 +246,9 @@ function BracketHeader() {
 }
 
 function MatchCard({ revealed = false, secondsRemaining = 60 }: { revealed?: boolean; secondsRemaining?: number }) {
+  const meterStyle = { '--scout-progress': `${(secondsRemaining / 60) * 100}%` } as CSSProperties;
   return (
-    <div className="match-card">
+    <div className={`match-card${revealed ? ' match-card--revealed' : ''}`}>
       <div className="match-card__head"><span>YOUR MATCH · LIVE</span><b>$10</b></div>
       <div className="competitors">
         <div className="competitor">
@@ -252,9 +262,14 @@ function MatchCard({ revealed = false, secondsRemaining = 60 }: { revealed?: boo
         </div>
       </div>
       <div className="score-row">
-        <span>167,300</span>{revealed ? <ScoutEye compact /> : <LockMark />}<span>{revealed ? '158,200' : '•••••'}</span>
+        <span>167,300</span>{revealed ? <ScoutEye compact /> : <LockMark />}<span className={revealed ? 'score-is-revealed' : ''}>{revealed ? '158,200' : '•••••'}</span>
       </div>
-      {revealed ? <p className="scout-timer"><b>{secondsRemaining}</b><br />Time left until Scout ends</p> : <p>VyralScore hidden until the round ends</p>}
+      {revealed ? (
+        <div className="scout-countdown" aria-live="polite">
+          <p className="scout-timer"><b>{secondsRemaining}</b><br />seconds until Scout locks</p>
+          <span className="scout-meter" style={meterStyle}><i /></span>
+        </div>
+      ) : <p>VyralScore hidden until the round ends</p>}
       <div className="match-footer"><span>Banked $0</span><span>Win +25XP</span></div>
     </div>
   );
@@ -320,6 +335,7 @@ function InteractiveTrial() {
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(60);
   const [useShortTimer, setUseShortTimer] = useState(false);
+  const [resolving, setResolving] = useState(false);
 
   useEffect(() => {
     setWinningBall(randomBallIndex());
@@ -342,6 +358,15 @@ function InteractiveTrial() {
     return () => window.clearInterval(timer);
   }, [expiresAt, scoutState]);
 
+  useEffect(() => {
+    if (!resolving || selectedBall === null || winningBall === null || phase !== 'pick') return;
+    const revealTimer = window.setTimeout(() => {
+      setResolving(false);
+      setPhase('result');
+    }, 850);
+    return () => window.clearTimeout(revealTimer);
+  }, [phase, resolving, selectedBall, winningBall]);
+
   const wonScout = selectedBall !== null && selectedBall === winningBall;
 
   function resetRound() {
@@ -351,12 +376,13 @@ function InteractiveTrial() {
     setScoutState('unavailable');
     setExpiresAt(null);
     setSecondsRemaining(60);
+    setResolving(false);
   }
 
   function pickBall(index: number) {
     if (phase !== 'pick' || winningBall === null) return;
     setSelectedBall(index);
-    setPhase('result');
+    setResolving(true);
   }
 
   function previewResult(result: 'scout' | 'nothing') {
@@ -367,6 +393,7 @@ function InteractiveTrial() {
     setScoutState('unavailable');
     setExpiresAt(null);
     setSecondsRemaining(60);
+    setResolving(false);
   }
 
   function startMatch() {
@@ -412,21 +439,23 @@ function InteractiveTrial() {
       </div>
       <div className="trial-shell">
         <div className="trial-stage">
-          {phase === 'pick' && <PickBallScreen onPick={pickBall} selectedBall={selectedBall} />}
-          {phase === 'result' && <ResultScreen result={wonScout ? 'scout' : 'nothing'} onStart={startMatch} />}
-          {phase === 'match' && (
-            <MatchScreen
-              scoutState={scoutState}
-              secondsRemaining={secondsRemaining}
-              onScoutTap={openScoutConfirmation}
-              onConfirmScout={activateScout}
-              onCancelScout={cancelScout}
-            />
-          )}
+          <div className={`trial-screen trial-screen--${phase}`} key={phase}>
+            {phase === 'pick' && <PickBallScreen onPick={pickBall} selectedBall={selectedBall} resolving={resolving} />}
+            {phase === 'result' && <ResultScreen result={wonScout ? 'scout' : 'nothing'} onStart={startMatch} />}
+            {phase === 'match' && (
+              <MatchScreen
+                scoutState={scoutState}
+                secondsRemaining={secondsRemaining}
+                onScoutTap={openScoutConfirmation}
+                onConfirmScout={activateScout}
+                onCancelScout={cancelScout}
+              />
+            )}
+          </div>
         </div>
         <aside className="trial-panel">
           <span className="trial-step">STEP 2 OF 4</span>
-          <h3>{phase === 'pick' ? 'Pick a ball' : phase === 'result' ? (wonScout ? 'Scout won' : 'Nothing won') : scoutState === 'active' ? 'Scout active' : scoutState === 'expired' ? 'Scout expired' : 'Round started'}</h3>
+          <h3>{phase === 'pick' ? (resolving ? 'Opening ball…' : 'Pick a ball') : phase === 'result' ? (wonScout ? 'Scout won' : 'Nothing won') : scoutState === 'active' ? 'Scout active' : scoutState === 'expired' ? 'Scout expired' : 'Round started'}</h3>
           <p aria-live="polite">{status}</p>
           <ol>
             <li className={phase === 'pick' ? 'is-active' : 'is-complete'}>Choose one of three balls</li>
@@ -686,9 +715,9 @@ export default function Home() {
         <div>
           <p className="kicker">VYRALNET · SCOUT TRIAL</p>
           <h1>Pick a Ball visual system</h1>
-          <p className="lede">Only the three Pick a Ball states and their shared visual elements, reconstructed before randomization, transitions, or game logic are introduced.</p>
+          <p className="lede">A complete standalone Scout trial: random three-ball selection, Scout or Nothing result, match handoff, one-use confirmation, timed score reveal, and automatic re-lock.</p>
         </div>
-        <div className="document-status"><span className="status-dot" /> Static visual system</div>
+        <div className="document-status"><span className="status-dot" /> Working interactive trial</div>
       </header>
 
       <nav className="scope-card" aria-label="Document sections">
@@ -706,8 +735,8 @@ export default function Home() {
       <AssetAudit />
 
       <footer>
-        <p>STATIC APPROVAL GATE</p>
-        <h2>Mechanics begin only after these elements are approved.</h2>
+        <p>COMPLETE STANDALONE FLOW</p>
+        <h2>Pick, reveal, spend Scout, count down, and lock the score again.</h2>
       </footer>
     </main>
   );
