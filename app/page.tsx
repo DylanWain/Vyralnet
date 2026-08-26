@@ -6,8 +6,16 @@ const FIGMA_FILE =
 function StatusBar() {
   return (
     <div className="status-bar" aria-hidden="true">
-      <span>9:41</span>
-      <span className="status-icons"><i /><i /><i /></span>
+      <img className="status-time" src="/assets/figma/pick/status-time.svg" width="34" height="13" alt="" />
+      <span className="status-icons">
+        <img src="/assets/figma/pick/status-cellular.svg" width="20" height="13" alt="" />
+        <img src="/assets/figma/pick/status-wifi.svg" width="18" height="13" alt="" />
+        <span className="status-battery">
+          <img className="status-battery__outline" src="/assets/figma/pick/status-battery-outline.svg" width="25" height="13" alt="" />
+          <img className="status-battery__fill" src="/assets/figma/pick/status-battery-fill.svg" width="21" height="9" alt="" />
+          <img className="status-battery__cap" src="/assets/figma/pick/status-battery-cap.svg" width="2" height="5" alt="" />
+        </span>
+      </span>
     </div>
   );
 }
@@ -97,6 +105,7 @@ function Phone({ children, className = '' }: { children: ReactNode; className?: 
 function PickBallScreen() {
   return (
     <Phone className="phone--power-balls">
+      <img className="pick-background-light" src="/assets/figma/pick/background-light.svg" width="402" height="700" alt="" aria-hidden="true" />
       <div className="power-copy">
         <p className="eyebrow">ROUND 1 BEGINS</p>
         <h3>Pick a ball.</h3>
@@ -257,6 +266,9 @@ function Comparison({ number, title, nodeId, specs, children, asset = false }: {
 }
 
 const assetAudit = [
+  { element: 'Selection background light', source: 'Figma group · 700 × 700 at −149,87 · supplied clipped SVG 402 × 700 · #8DC63F 20% → 0%', format: 'SVG', status: 'Exact' },
+  { element: 'iPhone status bar', source: 'Original 9:41, cellular, Wi-Fi, battery outline, fill, and cap vectors', format: '6 SVGs', status: 'Exact' },
+  { element: 'Mystery-ball source layers', source: 'Five original 108px radial layers plus the 92 × 31 shadow', format: '6 SVGs', status: 'Exact' },
   { element: 'Selection-state compact eye', source: 'Figma vector · 13 × 13 · two 1.6px rounded strokes', format: 'SVG', status: 'Exact' },
   { element: 'Selection-state explainer copy', source: 'Scout · hidden VyralScore · this round only · two separator dots', format: '6 SVGs', status: 'Exact' },
   { element: 'Selection-state explainer shell', source: 'Figma vector · 339 × 38 · original fill, stroke, and radius', format: 'SVG', status: 'Exact' },
@@ -267,8 +279,8 @@ const assetAudit = [
   { element: 'Mystery balls', source: 'Exact 110 × 134 Figma export · 8 radial layers · shadow · highlight · question glyph', format: 'SVG', status: 'Exact' },
   { element: 'Nothing ball', source: '170 × 170 at 116,200 · 1.5px white/25% border · dark gradients and shadow', format: 'SVG + CSS', status: 'Awaiting export' },
   { element: 'Burst rings', source: '460px #6FB04A/6% · 350px/15% · 250px/30% · 1px centered borders', format: 'SVG', status: 'Awaiting export' },
-  { element: 'Background lights', source: 'Radial glow and falloff layers across all three screens', format: 'CSS gradients', status: 'Mapped' },
-  { element: 'iPhone chrome', source: 'Status bar component + Home Indicator shape', format: 'Component', status: 'Mapped' },
+  { element: 'Result background lights', source: 'Radial glow and falloff layers for Scout and Nothing result screens', format: 'CSS gradients', status: 'Awaiting export' },
+  { element: 'iPhone home indicator', source: 'Home Indicator component geometry', format: 'Component', status: 'Mapped' },
   { element: 'Typography + labels', source: 'SF Pro text layers for Pick, Scout, Nothing, and supporting copy', format: 'Live text', status: 'Mapped' },
   { element: 'Result CTAs', source: 'Primary green and muted dark Start Round 1 frames', format: 'CSS', status: 'Mapped' },
   { element: 'Scout explainer pill', source: 'Original pill, eye, two dots, and all three outlined text layers', format: '7 SVGs', status: 'Exact' },
@@ -287,6 +299,19 @@ const exactPickAssets = [
   ['Complete mystery ball', 'mystery-ball-complete.svg'],
   ['Question glyph', 'question-mark.svg'],
   ['Ball outline', 'mystery-ball-outline.svg'],
+  ['Ball shade edge', 'ball-shade-edge.svg'],
+  ['Ball highlight radial', 'ball-highlight-radial.svg'],
+  ['Ball green radial', 'ball-green-radial.svg'],
+  ['Ball purple radial', 'ball-purple-radial.svg'],
+  ['Ball base radial', 'ball-base-radial.svg'],
+  ['Ball shadow', 'ball-shadow.svg'],
+  ['Selection background', 'background-light.svg'],
+  ['Status time', 'status-time.svg'],
+  ['Cellular signal', 'status-cellular.svg'],
+  ['Wi-Fi signal', 'status-wifi.svg'],
+  ['Battery fill', 'status-battery-fill.svg'],
+  ['Battery cap', 'status-battery-cap.svg'],
+  ['Battery outline', 'status-battery-outline.svg'],
 ] as const;
 
 function AssetAudit() {
@@ -312,9 +337,9 @@ function AssetAudit() {
       <div className="exact-asset-callout">
         <div className="exact-asset-preview"><ScoutEye /></div>
         <div>
-          <p className="kicker">VERIFIED SVG PACKAGE · 12 ORIGINAL EXPORTS</p>
+          <p className="kicker">VERIFIED SVG PACKAGE · 25 ORIGINAL EXPORTS</p>
           <h3>Exact Pick-a-Ball selection assets</h3>
-          <p>Your latest paste has been separated into its original Figma files and is now used directly in the selection screen: the full layered mystery ball, compact eye, explainer shell, separators, outlined labels, and Tap to Pick artwork. Scout-result and Nothing-result artwork remain clearly marked until their exports are supplied.</p>
+          <p>Both pasted batches have been separated into their original Figma files. The selection screen now uses the exact layered mystery ball, compact eye, explainer shell and labels, Tap to Pick artwork, 402 × 700 background light, and complete status-bar vectors. Scout-result and Nothing-result artwork remain clearly marked until their exports are supplied.</p>
           <div className="asset-links">
             <a href="/assets/figma/pick/mystery-ball-complete.svg">Mystery ball</a>
             <a href="/assets/figma/pick/compact-eye.svg">Compact eye</a>
@@ -323,7 +348,7 @@ function AssetAudit() {
           </div>
         </div>
       </div>
-      <div className="exact-source-grid" aria-label="Twelve exact SVG exports from Figma">
+      <div className="exact-source-grid" aria-label="Twenty-five exact SVG exports from Figma">
         {exactPickAssets.map(([label, file]) => (
           <a href={`/assets/figma/pick/${file}`} key={file}>
             <span><img src={`/assets/figma/pick/${file}`} alt="" aria-hidden="true" /></span>

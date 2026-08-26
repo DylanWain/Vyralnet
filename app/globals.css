@@ -32,11 +32,21 @@ h1 { margin:0; font-size:clamp(42px,6vw,82px); line-height:.94; letter-spacing:-
 .component-stage--asset { height:auto; min-height:690px; padding:34px; }
 .phone { position:relative; flex:0 0 auto; width:402px; height:874px; overflow:hidden; color:#fff; background:#000; transform:scale(var(--phone-scale)); box-shadow:0 30px 80px rgba(0,0,0,.22); }
 .phone::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 86% 34% at 52% 57%,rgba(117,153,54,.16),transparent 70%),linear-gradient(180deg,#000 0%,#020402 72%,#000 100%); }
-.status-bar { position:relative; z-index:8; display:flex; justify-content:space-between; align-items:center; padding:18px 22px 0; font-size:14px; font-weight:750; }
-.status-icons { display:flex; align-items:end; gap:5px; }
-.status-icons i:nth-child(1){width:4px;height:4px;border-radius:50%;background:#fff}.status-icons i:nth-child(2){width:12px;height:7px;border-radius:8px 8px 2px 2px;border:2px solid #fff;border-bottom:0}.status-icons i:nth-child(3){width:18px;height:8px;border-radius:2px;background:#fff}
+.status-bar { position:absolute; z-index:8; top:21px; left:24px; right:23px; display:flex; justify-content:space-between; align-items:flex-start; height:13px; }
+.status-bar img { display:block; max-width:none; }
+.status-time { width:34px; height:13px; }
+.status-icons { display:flex; align-items:flex-start; gap:6px; height:13px; }
+.status-icons>img:first-child { width:20px; height:13px; }
+.status-icons>img:nth-child(2) { width:18px; height:13px; }
+.status-battery { position:relative; display:block; width:27px; height:13px; }
+.status-battery img { position:absolute; }
+.status-battery__outline { left:0; top:0; width:25px; height:13px; }
+.status-battery__fill { left:2px; top:2px; width:21px; height:9px; }
+.status-battery__cap { left:25px; top:4px; width:2px; height:5px; }
 .home-indicator { position:absolute; z-index:9; left:50%; bottom:9px; width:126px; height:5px; border-radius:99px; background:#fff; transform:translateX(-50%); }
 .power-copy { position:absolute; z-index:2; top:119px; width:100%; text-align:center; }
+.phone--power-balls::before { background:#000; }
+.pick-background-light { position:absolute; z-index:1; left:0; top:87px; display:block; width:402px; height:700px; }
 .eyebrow { margin:0 0 7px; color:#8dc63f; font-size:12px; line-height:14px; font-weight:700; letter-spacing:0; }
 .power-copy h3,.result-copy h3 { margin:0; color:#fff; font-size:40px; line-height:1; letter-spacing:-.035em; }
 .subcopy { width:117px; margin:7px auto 0; color:rgba(255,255,255,.68); font-size:13px; font-weight:700; line-height:20px; }
