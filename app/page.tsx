@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { useEffect, useState, type ReactNode } from 'react';
 
 const FIGMA_FILE =
   'https://embed.figma.com/design/90sjA2iJxWs1XqRogzXv3r/Vyralnet-Game-Design';
@@ -133,7 +135,7 @@ function Phone({ children, className = '' }: { children: ReactNode; className?: 
   );
 }
 
-function PickBallScreen() {
+function PickBallScreen({ onPick, selectedBall = null }: { onPick?: (index: number) => void; selectedBall?: number | null }) {
   return (
     <Phone className="phone--power-balls">
       <img className="pick-background-light" src="/assets/figma/pick/background-light.svg" width="402" height="700" alt="" aria-hidden="true" />
@@ -143,7 +145,17 @@ function PickBallScreen() {
         <img className="pick-support-svg" src="/assets/figma/nothing/pick-support-copy.svg" width="116" height="33" alt="One holds Scout. Two hold nothing." />
       </div>
       <div className="ball-row">
-        <ExactPickBall /><ExactPickBall /><ExactPickBall />
+        {[0, 1, 2].map((index) => onPick ? (
+          <button
+            className={`pick-ball-button${selectedBall === index ? ' pick-ball-button--selected' : ''}`}
+            type="button"
+            onClick={() => onPick(index)}
+            aria-label={`Pick ball ${index + 1}`}
+            key={index}
+          >
+            <ExactPickBall />
+          </button>
+        ) : <ExactPickBall key={index} />)}
       </div>
       <img className="tap-label-svg" src="/assets/figma/pick/tap-to-pick.svg" width="70" height="9" alt="Tap to pick" />
       <div className="scout-explainer">
@@ -159,7 +171,7 @@ function PickBallScreen() {
   );
 }
 
-function ResultScreen({ result }: { result: 'scout' | 'nothing' }) {
+function ResultScreen({ result, onStart }: { result: 'scout' | 'nothing'; onStart?: () => void }) {
   const won = result === 'scout';
   return (
     <Phone className={`phone--result phone--result-${result}`}>
@@ -188,13 +200,13 @@ function ResultScreen({ result }: { result: 'scout' | 'nothing' }) {
         </div>
       )}
       {won ? (
-        <button className="exact-scout-cta" aria-label="Start Round 1">
+        <button className="exact-scout-cta" type="button" aria-label="Start Round 1" onClick={onStart}>
           <img className="exact-scout-cta__base" src="/assets/figma/scout/cta-base.svg" width="358" height="54" alt="" />
           <img className="exact-scout-cta__highlight" src="/assets/figma/scout/cta-highlight.svg" width="358" height="27" alt="" />
           <img className="exact-scout-cta__label" src="/assets/figma/scout/cta-label.svg" width="106" height="13" alt="" />
         </button>
       ) : (
-        <button className="exact-nothing-cta" aria-label="Start Round 1">
+        <button className="exact-nothing-cta" type="button" aria-label="Start Round 1" onClick={onStart}>
           <img className="exact-nothing-cta__shell" src="/assets/figma/nothing/cta-shell.svg" width="359" height="55" alt="" />
           <img className="exact-nothing-cta__label" src="/assets/figma/nothing/cta-label.svg" width="106" height="13" alt="" />
         </button>
@@ -242,7 +254,7 @@ function MatchCard({ revealed = false }: { revealed?: boolean }) {
   );
 }
 
-function MatchScreen({ state }: { state: 'base' | 'confirmation' | 'revealed' }) {
+function MatchScreen({ state, hasScout = true }: { state: 'base' | 'confirmation' | 'revealed'; hasScout?: boolean }) {
   const confirmation = state === 'confirmation';
   const revealed = state === 'revealed';
   return (
@@ -251,7 +263,7 @@ function MatchScreen({ state }: { state: 'base' | 'confirmation' | 'revealed' })
       <MatchCard revealed={revealed} />
       <span className="lower-bracket-line" />
       <div className="entered-label">32 CREATORS ENTER</div>
-      <ScoutBadge />
+      {hasScout && <ScoutBadge />}
       {confirmation && (
         <div className="confirmation-overlay">
           <div className="confirmation-sheet">
@@ -265,6 +277,86 @@ function MatchScreen({ state }: { state: 'base' | 'confirmation' | 'revealed' })
         </div>
       )}
     </Phone>
+  );
+}
+
+type TrialPhase = 'pick' | 'result' | 'match';
+
+function randomBallIndex() {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const value = new Uint32Array(1);
+    crypto.getRandomValues(value);
+    return value[0] % 3;
+  }
+  return Math.floor(Math.random() * 3);
+}
+
+function InteractiveTrial() {
+  const [phase, setPhase] = useState<TrialPhase>('pick');
+  const [winningBall, setWinningBall] = useState<number | null>(null);
+  const [selectedBall, setSelectedBall] = useState<number | null>(null);
+
+  useEffect(() => {
+    setWinningBall(randomBallIndex());
+  }, []);
+
+  const wonScout = selectedBall !== null && selectedBall === winningBall;
+
+  function resetRound() {
+    setWinningBall(randomBallIndex());
+    setSelectedBall(null);
+    setPhase('pick');
+  }
+
+  function pickBall(index: number) {
+    if (phase !== 'pick' || winningBall === null) return;
+    setSelectedBall(index);
+    setPhase('result');
+  }
+
+  function previewResult(result: 'scout' | 'nothing') {
+    const selected = 1;
+    setWinningBall(result === 'scout' ? selected : 0);
+    setSelectedBall(selected);
+    setPhase('result');
+  }
+
+  const status = phase === 'pick'
+    ? 'One of the three balls contains Scout.'
+    : phase === 'result'
+      ? wonScout ? 'Scout awarded. Continue into the match.' : 'Nothing awarded. Continue into the match.'
+      : wonScout ? 'Round started with one Scout available.' : 'Round started without Scout.';
+
+  return (
+    <section className="trial-section" aria-labelledby="trial-heading">
+      <div className="section-heading trial-heading-row">
+        <div><p className="kicker">STEP 01 · WORKING FLOW</p><h2 id="trial-heading">Interactive Pick-a-Ball trial</h2></div>
+        <p>Random selection · Result routing · Match handoff</p>
+      </div>
+      <div className="trial-shell">
+        <div className="trial-stage">
+          {phase === 'pick' && <PickBallScreen onPick={pickBall} selectedBall={selectedBall} />}
+          {phase === 'result' && <ResultScreen result={wonScout ? 'scout' : 'nothing'} onStart={() => setPhase('match')} />}
+          {phase === 'match' && <MatchScreen state="base" hasScout={wonScout} />}
+        </div>
+        <aside className="trial-panel">
+          <span className="trial-step">STEP 1 OF 4</span>
+          <h3>{phase === 'pick' ? 'Pick a ball' : phase === 'result' ? (wonScout ? 'Scout won' : 'Nothing won') : 'Round started'}</h3>
+          <p aria-live="polite">{status}</p>
+          <ol>
+            <li className={phase === 'pick' ? 'is-active' : 'is-complete'}>Choose one of three balls</li>
+            <li className={phase === 'result' ? 'is-active' : phase === 'match' ? 'is-complete' : ''}>Route to the correct result</li>
+            <li className={phase === 'match' ? 'is-active' : ''}>Carry Scout into the match</li>
+          </ol>
+          <div className="trial-actions">
+            <button type="button" onClick={resetRound}>Reset random round</button>
+            <button type="button" onClick={() => previewResult('scout')}>Preview Scout</button>
+            <button type="button" onClick={() => previewResult('nothing')}>Preview Nothing</button>
+          </div>
+          <small>Preview buttons are review controls only. The actual player path always uses the random ball assignment.</small>
+        </aside>
+      </div>
+    </section>
   );
 }
 
@@ -514,6 +606,8 @@ export default function Home() {
         <div><span>02</span><p>Reusable game elements</p></div>
         <div><span>03</span><p>Figma source audit</p></div>
       </nav>
+
+      <InteractiveTrial />
 
       <Comparison number="SCREEN 01" title="Power Ball selection" nodeId="9-1080" specs={['402 × 874', 'SF Pro', 'Three 108px ball groups']}><PickBallScreen /></Comparison>
       <Comparison number="SCREEN 02" title="Scout awarded" nodeId="9-1298" specs={['Scout core', 'Burst rings', 'Primary CTA']}><ResultScreen result="scout" /></Comparison>
