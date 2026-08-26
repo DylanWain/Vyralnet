@@ -165,6 +165,7 @@ function PickBallScreen({
             type="button"
             onClick={() => onPick(index)}
             disabled={resolving}
+            style={{ '--pick-shift': `${index === 0 ? 128 : index === 2 ? -128 : 0}px` } as CSSProperties}
             aria-label={`Pick ball ${index + 1}`}
             key={index}
           >
@@ -246,7 +247,10 @@ function BracketHeader() {
 }
 
 function MatchCard({ revealed = false, secondsRemaining = 60 }: { revealed?: boolean; secondsRemaining?: number }) {
-  const meterStyle = { '--scout-progress': `${(secondsRemaining / 60) * 100}%` } as CSSProperties;
+  const meterStyle = {
+    '--scout-progress': `${(secondsRemaining / 60) * 100}%`,
+    '--scout-angle': `${(secondsRemaining / 60) * 360}deg`,
+  } as CSSProperties;
   return (
     <div className={`match-card${revealed ? ' match-card--revealed' : ''}`}>
       <div className="match-card__head"><span>YOUR MATCH · LIVE</span><b>$10</b></div>
@@ -266,7 +270,8 @@ function MatchCard({ revealed = false, secondsRemaining = 60 }: { revealed?: boo
       </div>
       {revealed ? (
         <div className="scout-countdown" aria-live="polite">
-          <p className="scout-timer"><b>{secondsRemaining}</b><br />seconds until Scout locks</p>
+          <span className="scout-timer-ring" style={meterStyle}><i>{secondsRemaining}</i></span>
+          <p className="scout-timer"><b>Scout active</b><br />seconds until the score locks</p>
           <span className="scout-meter" style={meterStyle}><i /></span>
         </div>
       ) : <p>VyralScore hidden until the round ends</p>}
@@ -283,23 +288,28 @@ function MatchScreen({
   onScoutTap,
   onConfirmScout,
   onCancelScout,
+  onNewRound,
 }: {
   scoutState?: ScoutUseState;
   secondsRemaining?: number;
   onScoutTap?: () => void;
   onConfirmScout?: () => void;
   onCancelScout?: () => void;
+  onNewRound?: () => void;
 }) {
   const confirmation = scoutState === 'confirming';
   const revealed = scoutState === 'active';
   const hasScout = scoutState !== 'unavailable';
   return (
-    <Phone className={`phone--match${confirmation ? ' phone--blurred' : ''}`}>
+    <Phone className={`phone--match phone--scout-${scoutState}${confirmation ? ' phone--blurred' : ''}`}>
       <BracketHeader />
       <MatchCard revealed={revealed} secondsRemaining={secondsRemaining} />
       <span className="lower-bracket-line" />
       <div className="entered-label">32 CREATORS ENTER</div>
       {hasScout && <ScoutBadge onActivate={scoutState === 'available' ? onScoutTap : undefined} used={scoutState === 'expired'} />}
+      {(scoutState === 'expired' || scoutState === 'unavailable') && (
+        <button className="round-restart-button" type="button" onClick={onNewRound}>Play Round 1 Again</button>
+      )}
       {confirmation && (
         <div className="confirmation-overlay">
           <div className="confirmation-sheet">
@@ -334,8 +344,8 @@ function InteractiveTrial() {
   const [scoutState, setScoutState] = useState<ScoutUseState>('unavailable');
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(60);
-  const [useShortTimer, setUseShortTimer] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     setWinningBall(randomBallIndex());
@@ -385,17 +395,6 @@ function InteractiveTrial() {
     setResolving(true);
   }
 
-  function previewResult(result: 'scout' | 'nothing') {
-    const selected = 1;
-    setWinningBall(result === 'scout' ? selected : 0);
-    setSelectedBall(selected);
-    setPhase('result');
-    setScoutState('unavailable');
-    setExpiresAt(null);
-    setSecondsRemaining(60);
-    setResolving(false);
-  }
-
   function startMatch() {
     setScoutState(wonScout ? 'available' : 'unavailable');
     setPhase('match');
@@ -407,7 +406,7 @@ function InteractiveTrial() {
 
   function activateScout() {
     if (scoutState !== 'confirming') return;
-    const duration = useShortTimer ? 5 : 60;
+    const duration = 60;
     setSecondsRemaining(duration);
     setExpiresAt(Date.now() + duration * 1000);
     setScoutState('active');
@@ -434,10 +433,17 @@ function InteractiveTrial() {
   return (
     <section className="trial-section" aria-labelledby="trial-heading">
       <div className="section-heading trial-heading-row">
-        <div><p className="kicker">STEP 01 · WORKING FLOW</p><h2 id="trial-heading">Interactive Pick-a-Ball trial</h2></div>
-        <p>Random selection · One-use Scout · Accurate expiration</p>
+        <div><p className="kicker">PLAYABLE TRIAL</p><h2 id="trial-heading">Pick-a-Ball Scout mechanic</h2></div>
+        <p>Random draw · One-use Scout · Exact 60-second reveal</p>
       </div>
       <div className="trial-shell">
+        <div className="game-toolbar">
+          <span><i /> ROUND 1 · {phase === 'pick' ? (resolving ? 'BALL OPENING' : 'PICK') : phase === 'result' ? 'RESULT' : scoutState === 'active' ? 'SCOUT ACTIVE' : 'MATCH'}</span>
+          <div>
+            <button type="button" onClick={() => setShowRules(true)}>How to play</button>
+            <button type="button" onClick={resetRound}>Restart</button>
+          </div>
+        </div>
         <div className="trial-stage">
           <div className={`trial-screen trial-screen--${phase}`} key={phase}>
             {phase === 'pick' && <PickBallScreen onPick={pickBall} selectedBall={selectedBall} resolving={resolving} />}
@@ -449,31 +455,28 @@ function InteractiveTrial() {
                 onScoutTap={openScoutConfirmation}
                 onConfirmScout={activateScout}
                 onCancelScout={cancelScout}
+                onNewRound={resetRound}
               />
             )}
           </div>
+          <span className="sr-only" aria-live="polite">{status}</span>
+          {showRules && (
+            <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+              <button className="rules-backdrop" type="button" aria-label="Close rules" onClick={() => setShowRules(false)} />
+              <div className="rules-card">
+                <p>SCOUT POWER-UP</p>
+                <h3 id="rules-title">How to play</h3>
+                <ol>
+                  <li><b>Pick one ball.</b><span>One random ball holds Scout. The other two hold Nothing.</span></li>
+                  <li><b>Start the round.</b><span>If you win Scout, it docks beside your live match.</span></li>
+                  <li><b>Spend it once.</b><span>Tap Scout and confirm when you want to see the opponent&apos;s score.</span></li>
+                  <li><b>You get 60 seconds.</b><span>The score hides and locks automatically when time expires.</span></li>
+                </ol>
+                <button className="rules-close" type="button" onClick={() => setShowRules(false)}>Got it</button>
+              </div>
+            </div>
+          )}
         </div>
-        <aside className="trial-panel">
-          <span className="trial-step">STEP 2 OF 4</span>
-          <h3>{phase === 'pick' ? (resolving ? 'Opening ball…' : 'Pick a ball') : phase === 'result' ? (wonScout ? 'Scout won' : 'Nothing won') : scoutState === 'active' ? 'Scout active' : scoutState === 'expired' ? 'Scout expired' : 'Round started'}</h3>
-          <p aria-live="polite">{status}</p>
-          <ol>
-            <li className={phase === 'pick' ? 'is-active' : 'is-complete'}>Choose one of three balls</li>
-            <li className={phase === 'result' ? 'is-active' : phase === 'match' ? 'is-complete' : ''}>Route to the correct result</li>
-            <li className={phase === 'match' && scoutState !== 'active' && scoutState !== 'expired' ? 'is-active' : phase === 'match' ? 'is-complete' : ''}>Carry Scout into the match</li>
-            <li className={scoutState === 'active' ? 'is-active' : scoutState === 'expired' ? 'is-complete' : ''}>Reveal and relock the score</li>
-          </ol>
-          <label className="timer-test-control">
-            <input type="checkbox" checked={useShortTimer} onChange={(event) => setUseShortTimer(event.target.checked)} disabled={scoutState === 'active'} />
-            <span><b>5-second review timer</b>Use 60 seconds when this is off.</span>
-          </label>
-          <div className="trial-actions">
-            <button type="button" onClick={resetRound}>Reset random round</button>
-            <button type="button" onClick={() => previewResult('scout')}>Preview Scout</button>
-            <button type="button" onClick={() => previewResult('nothing')}>Preview Nothing</button>
-          </div>
-          <small>Preview and short-timer controls are for reviewing this standalone trial. The player path uses a random ball and a full 60-second Scout.</small>
-        </aside>
       </div>
     </section>
   );
