@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 const FIGMA_FILE =
   'https://embed.figma.com/design/90sjA2iJxWs1XqRogzXv3r/Vyralnet-Game-Design';
@@ -143,12 +143,30 @@ function ScoutBadge({ count = 1, onActivate, used = false }: { count?: number; o
   );
 }
 
-function Phone({ children, className = '' }: { children: ReactNode; className?: string }) {
+function Phone({
+  children,
+  className = '',
+  mobileMode = false,
+  onOpenGuide,
+  guideOverlay,
+}: {
+  children: ReactNode;
+  className?: string;
+  mobileMode?: boolean;
+  onOpenGuide?: () => void;
+  guideOverlay?: ReactNode;
+}) {
   return (
-    <div className={`phone ${className}`}>
-      <StatusBar />
+    <div className={`phone ${className}${mobileMode ? ' phone--mobile-game' : ''}`}>
+      {!mobileMode && <StatusBar />}
       {children}
-      <HomeIndicator />
+      {mobileMode && onOpenGuide && !guideOverlay && (
+        <button className="mobile-help-button" type="button" onClick={onOpenGuide} aria-label="Open game rules and scoring system">
+          <span aria-hidden="true">?</span>
+        </button>
+      )}
+      {guideOverlay}
+      {!mobileMode && <HomeIndicator />}
     </div>
   );
 }
@@ -157,13 +175,19 @@ function PickBallScreen({
   onPick,
   selectedBall = null,
   resolving = false,
+  mobileMode = false,
+  onOpenGuide,
+  guideOverlay,
 }: {
   onPick?: (index: number) => void;
   selectedBall?: number | null;
   resolving?: boolean;
+  mobileMode?: boolean;
+  onOpenGuide?: () => void;
+  guideOverlay?: ReactNode;
 }) {
   return (
-    <Phone className="phone--power-balls">
+    <Phone className="phone--power-balls" mobileMode={mobileMode} onOpenGuide={onOpenGuide} guideOverlay={guideOverlay}>
       <img className="pick-background-light" src="/assets/figma/pick/background-light.svg" width="402" height="700" alt="" aria-hidden="true" />
       <div className="power-copy">
         <p className="eyebrow">ROUND 1 BEGINS</p>
@@ -198,10 +222,22 @@ function PickBallScreen({
   );
 }
 
-function ResultScreen({ result, onStart }: { result: 'scout' | 'nothing'; onStart?: () => void }) {
+function ResultScreen({
+  result,
+  onStart,
+  mobileMode = false,
+  onOpenGuide,
+  guideOverlay,
+}: {
+  result: 'scout' | 'nothing';
+  onStart?: () => void;
+  mobileMode?: boolean;
+  onOpenGuide?: () => void;
+  guideOverlay?: ReactNode;
+}) {
   const won = result === 'scout';
   return (
-    <Phone className={`phone--result phone--result-${result}`}>
+    <Phone className={`phone--result phone--result-${result}`} mobileMode={mobileMode} onOpenGuide={onOpenGuide} guideOverlay={guideOverlay}>
       {won && <img className="scout-result-background" src="/assets/figma/scout/background-light.svg" width="402" height="661" alt="" aria-hidden="true" />}
       <div className="result-orb">
         {won ? <>
@@ -348,6 +384,9 @@ function MatchScreen({
   onConfirmScout,
   onCancelScout,
   onNewRound,
+  mobileMode = false,
+  onOpenGuide,
+  guideOverlay,
 }: {
   scoutState?: ScoutUseState;
   secondsRemaining?: number;
@@ -357,13 +396,21 @@ function MatchScreen({
   onConfirmScout?: () => void;
   onCancelScout?: () => void;
   onNewRound?: () => void;
+  mobileMode?: boolean;
+  onOpenGuide?: () => void;
+  guideOverlay?: ReactNode;
 }) {
   const confirmation = scoutState === 'confirming';
   const revealed = scoutState === 'active';
   const hasScout = scoutState !== 'unavailable';
   const [showEndRoundConfirmation, setShowEndRoundConfirmation] = useState(false);
   return (
-    <Phone className={`phone--match phone--scout-${scoutState}${confirmation ? ' phone--blurred' : ''}${hasScout ? ' phone--has-end-round' : ''}`}>
+    <Phone
+      className={`phone--match phone--scout-${scoutState}${confirmation ? ' phone--blurred' : ''}${hasScout ? ' phone--has-end-round' : ''}`}
+      mobileMode={mobileMode}
+      onOpenGuide={onOpenGuide}
+      guideOverlay={guideOverlay}
+    >
       {hasScout && (
         <button className="end-round-button" type="button" onClick={() => setShowEndRoundConfirmation(true)} aria-label="End Round 1">
           <span aria-hidden="true">‹</span>
@@ -405,7 +452,66 @@ function MatchScreen({
   );
 }
 
+function MobileGameGuide({
+  onClose,
+  soundEnabled,
+  onToggleSound,
+}: {
+  onClose: () => void;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
+}) {
+  return (
+    <div className="mobile-guide-overlay" role="dialog" aria-modal="true" aria-labelledby="mobile-guide-title">
+      <div className="mobile-guide-sheet">
+        <button className="mobile-guide-close" type="button" aria-label="Close game and scoring guide" onClick={onClose}>×</button>
+        <p className="mobile-guide-kicker">PRIVATE TRIAL GUIDE</p>
+        <h3 id="mobile-guide-title">Game + scoring</h3>
+        <button className="guide-sound-toggle" type="button" aria-pressed={soundEnabled} onClick={onToggleSound}>
+          <span><i aria-hidden="true">♪</i> Sound effects</span>
+          <b>{soundEnabled ? 'On' : 'Off'}</b>
+        </button>
+        <section>
+          <h4>How this trial works</h4>
+          <ol>
+            <li><b>Pick one ball.</b><span>One random ball holds Scout. The other two hold Nothing.</span></li>
+            <li><b>Start the round.</b><span>If you win Scout, it docks beside your live match.</span></li>
+            <li><b>Spend it once.</b><span>Scout reveals the opponent&apos;s hidden VyralScore without changing points, rankings, or the bracket.</span></li>
+            <li><b>Exactly 60 seconds.</b><span>The score automatically hides and locks again when the timer expires.</span></li>
+          </ol>
+          <div className="guide-spec-note"><b>Trial scope</b><span>The full Power Move spec also includes Empty and 5XP outcomes plus persistent inventory. Those are intentionally outside this standalone CEO trial.</span></div>
+        </section>
+        <section className="scoring-guide">
+          <h4>Latest locked VyralScore</h4>
+          <p className="scoring-guide__warning">Internal reference only. Production should display the final score—not expose this formula.</p>
+          <p className="scoring-guide__superseded">The June 2026 launch spec supersedes the older +1/+2/+3 and views-only drafts.</p>
+          <div className="scoring-formula">
+            <span>Performance score</span>
+            <strong>Views + Likes×3 + Comments×90<br />+ Saves×70 + Shares×50</strong>
+          </div>
+          <div className="scoring-formula">
+            <span>Breakout multiplier</span>
+            <strong>Views ÷ (Followers + 2,000)</strong>
+            <small>Capped from 1.0× to 2.0×</small>
+          </div>
+          <div className="scoring-formula scoring-formula--final">
+            <span>Final score</span>
+            <strong>Performance score × Breakout</strong>
+            <small>Higher Final Score advances</small>
+          </div>
+          <ul className="scoring-notes">
+            <li>Instagram totals are cumulative and never reset between rounds.</li>
+            <li>The latest polled API totals are the official result.</li>
+            <li>Opponent scores stay hidden except during Scout&apos;s 60-second reveal.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 type TrialPhase = 'pick' | 'result' | 'match';
+type GameSound = 'tap' | 'reveal' | 'scout';
 
 function randomBallIndex() {
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
@@ -428,6 +534,73 @@ function InteractiveTrial() {
   const [resolving, setResolving] = useState(false);
   const [resultTransitioning, setResultTransitioning] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const soundEnabledRef = useRef(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const playGameSound = useCallback((sound: GameSound) => {
+    if (!soundEnabledRef.current || typeof window === 'undefined') return;
+
+    try {
+      const context = audioContextRef.current ?? new AudioContext();
+      audioContextRef.current = context;
+      if (context.state === 'suspended') void context.resume();
+
+      const now = context.currentTime + 0.008;
+      const tone = (
+        frequency: number,
+        endFrequency: number,
+        offset: number,
+        duration: number,
+        volume: number,
+        type: OscillatorType,
+      ) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const start = now + offset;
+        const end = start + duration;
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, start);
+        oscillator.frequency.exponentialRampToValueAtTime(endFrequency, end);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(volume, start + Math.min(0.025, duration / 3));
+        gain.gain.exponentialRampToValueAtTime(0.0001, end);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(start);
+        oscillator.stop(end + 0.02);
+      };
+
+      if (sound === 'tap') {
+        tone(190, 92, 0, 0.09, 0.07, 'sine');
+      } else if (sound === 'reveal') {
+        tone(105, 360, 0, 0.34, 0.055, 'triangle');
+        tone(220, 690, 0.08, 0.3, 0.038, 'sine');
+      } else {
+        tone(392, 440, 0, 0.24, 0.045, 'sine');
+        tone(587, 659, 0.08, 0.28, 0.05, 'sine');
+        tone(784, 880, 0.17, 0.36, 0.045, 'sine');
+      }
+    } catch {
+      // Sound is enhancement-only; the mechanic still works if Web Audio is unavailable.
+    }
+  }, []);
+
+  function toggleSound() {
+    const next = !soundEnabledRef.current;
+    soundEnabledRef.current = next;
+    setSoundEnabled(next);
+    if (next) window.setTimeout(() => playGameSound('tap'), 0);
+  }
+
+  useEffect(() => {
+    return () => {
+      const context = audioContextRef.current;
+      audioContextRef.current = null;
+      if (context && context.state !== 'closed') void context.close();
+    };
+  }, []);
 
   useEffect(() => {
     if (scoutState !== 'active' || expiresAt === null) return;
@@ -467,12 +640,13 @@ function InteractiveTrial() {
   useEffect(() => {
     if (!resolving || selectedBall === null || winningBall === null || phase !== 'pick') return;
     const revealTimer = window.setTimeout(() => {
+      playGameSound('reveal');
       setResolving(false);
       setResultTransitioning(true);
       setPhase('result');
     }, 420);
     return () => window.clearTimeout(revealTimer);
-  }, [phase, resolving, selectedBall, winningBall]);
+  }, [phase, playGameSound, resolving, selectedBall, winningBall]);
 
   useEffect(() => {
     if (!resultTransitioning) return;
@@ -497,6 +671,7 @@ function InteractiveTrial() {
 
   function pickBall(index: number) {
     if (phase !== 'pick' || winningBall === null) return;
+    playGameSound('tap');
     setSelectedBall(index);
     setResolving(true);
   }
@@ -515,6 +690,7 @@ function InteractiveTrial() {
 
   function activateScout() {
     if (scoutState !== 'confirming') return;
+    playGameSound('scout');
     setSecondsRemaining(SCOUT_DURATION_SECONDS);
     setExpiresAt(Date.now() + SCOUT_DURATION_MS);
     setScoutState('active');
@@ -538,6 +714,14 @@ function InteractiveTrial() {
               ? 'Scout expired. The opponent score is hidden and locked again.'
               : 'Round started without Scout.';
 
+  const guideOverlay = showRules ? (
+    <MobileGameGuide
+      onClose={() => setShowRules(false)}
+      soundEnabled={soundEnabled}
+      onToggleSound={toggleSound}
+    />
+  ) : undefined;
+
   return (
     <section className="trial-section" aria-labelledby="trial-heading">
       <div className="section-heading trial-heading-row">
@@ -545,22 +729,29 @@ function InteractiveTrial() {
         <p>Random draw · One-use Scout · Exact 60-second reveal</p>
       </div>
       <div className="trial-shell">
-        <div className="game-toolbar">
-          <span><i /> ROUND 1 · {phase === 'pick' ? (resolving ? 'BALL OPENING' : 'PICK') : phase === 'result' ? 'RESULT' : scoutState === 'active' ? 'SCOUT ACTIVE' : 'MATCH'}</span>
-          <div>
-            <button type="button" onClick={resetRound}>Restart</button>
-          </div>
-        </div>
         <div className="trial-stage">
           <div className={`trial-screen trial-screen--${phase}`}>
             {(phase === 'pick' || resultTransitioning) && (
               <div className={`trial-phase-layer trial-phase-layer--pick${resultTransitioning ? ' is-exiting' : ''}`}>
-                <PickBallScreen onPick={pickBall} selectedBall={selectedBall} resolving={resolving || resultTransitioning} />
+                <PickBallScreen
+                  onPick={pickBall}
+                  selectedBall={selectedBall}
+                  resolving={resolving || resultTransitioning}
+                  mobileMode
+                  onOpenGuide={phase === 'pick' ? () => setShowRules(true) : undefined}
+                  guideOverlay={phase === 'pick' ? guideOverlay : undefined}
+                />
               </div>
             )}
             {phase === 'result' && (
               <div className={`trial-phase-layer trial-phase-layer--result${resultTransitioning ? ' is-entering' : ''}`}>
-                <ResultScreen result={wonScout ? 'scout' : 'nothing'} onStart={startMatch} />
+                <ResultScreen
+                  result={wonScout ? 'scout' : 'nothing'}
+                  onStart={startMatch}
+                  mobileMode
+                  onOpenGuide={() => setShowRules(true)}
+                  guideOverlay={guideOverlay}
+                />
               </div>
             )}
             {phase === 'match' && (
@@ -574,62 +765,14 @@ function InteractiveTrial() {
                   onConfirmScout={activateScout}
                   onCancelScout={cancelScout}
                   onNewRound={resetRound}
+                  mobileMode
+                  onOpenGuide={() => setShowRules(true)}
+                  guideOverlay={guideOverlay}
                 />
               </div>
             )}
           </div>
           <span className="sr-only" aria-live="polite">{status}</span>
-          <button className="game-guide-trigger" type="button" onClick={() => setShowRules(true)}>
-            <span aria-hidden="true">i</span>
-            Game + scoring
-          </button>
-          {showRules && (
-            <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
-              <button className="rules-backdrop" type="button" aria-label="Close rules" onClick={() => setShowRules(false)} />
-              <div className="rules-card rules-card--guide">
-                <button className="rules-card__dismiss" type="button" aria-label="Close game and scoring guide" onClick={() => setShowRules(false)}>×</button>
-                <p>PRIVATE TRIAL GUIDE</p>
-                <h3 id="rules-title">Game + scoring</h3>
-                <div className="rules-guide-grid">
-                  <section>
-                    <h4>How this trial works</h4>
-                    <ol>
-                      <li><b>Pick one ball.</b><span>For this CEO trial, one random ball holds Scout and two hold Nothing.</span></li>
-                      <li><b>Start the round.</b><span>If Scout is won, it docks beside the live match.</span></li>
-                      <li><b>Spend it once.</b><span>Scout reveals the opponent&apos;s hidden VyralScore. It never changes points, rankings, or the bracket.</span></li>
-                      <li><b>Exactly 60 seconds.</b><span>The score automatically hides and locks again when the timer expires.</span></li>
-                    </ol>
-                    <div className="guide-spec-note"><b>Full-product difference</b><span>The separate Power Move PDF specifies Empty + 5XP + Scout and persistent inventory. Those are intentionally outside this standalone trial.</span></div>
-                  </section>
-                  <section className="scoring-guide">
-                    <h4>Latest locked VyralScore</h4>
-                    <p className="scoring-guide__warning">Internal reference only. The launch spec says production should show the final number—not publish the formula.</p>
-                    <p className="scoring-guide__superseded">The older PDFs&apos; simple +1/+2/+3 weights and views-only rule are superseded by the June 2026 launch spec.</p>
-                    <div className="scoring-formula">
-                      <span>Performance score</span>
-                      <strong>Views + Likes×3 + Comments×90<br />+ Saves×70 + Shares×50</strong>
-                    </div>
-                    <div className="scoring-formula">
-                      <span>Breakout multiplier</span>
-                      <strong>Views ÷ (Followers + 2,000)</strong>
-                      <small>Capped from 1.0× to 2.0×</small>
-                    </div>
-                    <div className="scoring-formula scoring-formula--final">
-                      <span>Final score</span>
-                      <strong>Performance score × Breakout</strong>
-                      <small>Higher Final Score advances</small>
-                    </div>
-                    <ul className="scoring-notes">
-                      <li>Instagram totals are cumulative and never reset between rounds.</li>
-                      <li>The latest polled API totals are the official result.</li>
-                      <li>Opponent scores stay hidden everywhere except during Scout&apos;s 60-second reveal.</li>
-                    </ul>
-                  </section>
-                </div>
-                <button className="rules-close" type="button" onClick={() => setShowRules(false)}>Got it</button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </section>
