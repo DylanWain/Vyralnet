@@ -319,11 +319,11 @@ function MatchCard({ revealed = false, secondsRemaining = 60, expiresAt = null }
       <div className="score-row">
         <span className="exact-score-pill">
           <img className="exact-score-pill__shell" src="/assets/figma/match/score-pill.svg" width="142" height="27" alt="" aria-hidden="true" />
-          <img className="exact-score-pill__value" src="/assets/figma/match/creator-score.svg" width="44" height="11" alt="167,300" />
+          <img className="exact-score-pill__value" src="/assets/figma/match/creator-score.svg" width="44" height="11" alt="167,300 VyralScore" />
         </span>
         {revealed ? <ScoutEye compact /> : <LockMark />}
         {revealed ? (
-          <span className="score-is-revealed">158,200</span>
+          <span className="score-is-revealed" aria-label="158,200 VyralScore">158,200</span>
         ) : (
           <img className="exact-hidden-score" src="/assets/figma/match/hidden-score-pill.svg" width="142" height="27" alt="Opponent score hidden" />
         )}
@@ -548,7 +548,6 @@ function InteractiveTrial() {
         <div className="game-toolbar">
           <span><i /> ROUND 1 · {phase === 'pick' ? (resolving ? 'BALL OPENING' : 'PICK') : phase === 'result' ? 'RESULT' : scoutState === 'active' ? 'SCOUT ACTIVE' : 'MATCH'}</span>
           <div>
-            <button type="button" onClick={() => setShowRules(true)}>How to play</button>
             <button type="button" onClick={resetRound}>Restart</button>
           </div>
         </div>
@@ -580,18 +579,53 @@ function InteractiveTrial() {
             )}
           </div>
           <span className="sr-only" aria-live="polite">{status}</span>
+          <button className="game-guide-trigger" type="button" onClick={() => setShowRules(true)}>
+            <span aria-hidden="true">i</span>
+            Game + scoring
+          </button>
           {showRules && (
             <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
               <button className="rules-backdrop" type="button" aria-label="Close rules" onClick={() => setShowRules(false)} />
-              <div className="rules-card">
-                <p>SCOUT POWER-UP</p>
-                <h3 id="rules-title">How to play</h3>
-                <ol>
-                  <li><b>Pick one ball.</b><span>One random ball holds Scout. The other two hold Nothing.</span></li>
-                  <li><b>Start the round.</b><span>If you win Scout, it docks beside your live match.</span></li>
-                  <li><b>Spend it once.</b><span>Tap Scout and confirm when you want to see the opponent&apos;s score.</span></li>
-                  <li><b>You get 60 seconds.</b><span>The score hides and locks automatically when time expires.</span></li>
-                </ol>
+              <div className="rules-card rules-card--guide">
+                <button className="rules-card__dismiss" type="button" aria-label="Close game and scoring guide" onClick={() => setShowRules(false)}>×</button>
+                <p>PRIVATE TRIAL GUIDE</p>
+                <h3 id="rules-title">Game + scoring</h3>
+                <div className="rules-guide-grid">
+                  <section>
+                    <h4>How this trial works</h4>
+                    <ol>
+                      <li><b>Pick one ball.</b><span>For this CEO trial, one random ball holds Scout and two hold Nothing.</span></li>
+                      <li><b>Start the round.</b><span>If Scout is won, it docks beside the live match.</span></li>
+                      <li><b>Spend it once.</b><span>Scout reveals the opponent&apos;s hidden VyralScore. It never changes points, rankings, or the bracket.</span></li>
+                      <li><b>Exactly 60 seconds.</b><span>The score automatically hides and locks again when the timer expires.</span></li>
+                    </ol>
+                    <div className="guide-spec-note"><b>Full-product difference</b><span>The separate Power Move PDF specifies Empty + 5XP + Scout and persistent inventory. Those are intentionally outside this standalone trial.</span></div>
+                  </section>
+                  <section className="scoring-guide">
+                    <h4>Latest locked VyralScore</h4>
+                    <p className="scoring-guide__warning">Internal reference only. The launch spec says production should show the final number—not publish the formula.</p>
+                    <p className="scoring-guide__superseded">The older PDFs&apos; simple +1/+2/+3 weights and views-only rule are superseded by the June 2026 launch spec.</p>
+                    <div className="scoring-formula">
+                      <span>Performance score</span>
+                      <strong>Views + Likes×3 + Comments×90<br />+ Saves×70 + Shares×50</strong>
+                    </div>
+                    <div className="scoring-formula">
+                      <span>Breakout multiplier</span>
+                      <strong>Views ÷ (Followers + 2,000)</strong>
+                      <small>Capped from 1.0× to 2.0×</small>
+                    </div>
+                    <div className="scoring-formula scoring-formula--final">
+                      <span>Final score</span>
+                      <strong>Performance score × Breakout</strong>
+                      <small>Higher Final Score advances</small>
+                    </div>
+                    <ul className="scoring-notes">
+                      <li>Instagram totals are cumulative and never reset between rounds.</li>
+                      <li>The latest polled API totals are the official result.</li>
+                      <li>Opponent scores stay hidden everywhere except during Scout&apos;s 60-second reveal.</li>
+                    </ul>
+                  </section>
+                </div>
                 <button className="rules-close" type="button" onClick={() => setShowRules(false)}>Got it</button>
               </div>
             </div>
