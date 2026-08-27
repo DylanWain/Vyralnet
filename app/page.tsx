@@ -5,6 +5,15 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 const FIGMA_FILE =
   'https://embed.figma.com/design/90sjA2iJxWs1XqRogzXv3r/Vyralnet-Game-Design';
 
+const ROUND_DURATION_SECONDS = 55 * 60;
+
+function formatClock(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 function StatusBar() {
   return (
     <div className="status-bar" aria-hidden="true">
@@ -105,10 +114,13 @@ function CrownMark() {
 
 function ProfileAvatar({ variant = 'you' }: { variant?: 'you' | 'opponent' }) {
   return (
-    <span className={`avatar avatar--${variant}`}>
-      <span className="avatar__head" />
-      <span className="avatar__body" />
-    </span>
+    <img
+      className={`avatar avatar--${variant}`}
+      src={`/assets/figma/match/avatar-${variant}.svg`}
+      width={variant === 'you' ? 97 : 98}
+      height={variant === 'you' ? 97 : 98}
+      alt={variant === 'you' ? 'Your creator profile' : '@ronellegan profile'}
+    />
   );
 }
 
@@ -232,16 +244,30 @@ function ResultScreen({ result, onStart }: { result: 'scout' | 'nothing'; onStar
   );
 }
 
-function BracketHeader() {
+function BracketHeader({ roundSecondsRemaining }: { roundSecondsRemaining: number }) {
+  const clock = formatClock(roundSecondsRemaining);
   return (
     <div className="bracket-header">
-      <div className="round-meta"><span>ROUND 1 · 32 LEFT</span><b><i /> Ends 54:02</b></div>
+      <div className="round-meta">
+        <span>ROUND 1 · 32 LEFT</span>
+        <b aria-label={`Round ends in ${clock}`}><i /><span>Ends</span> <time>{clock}</time></b>
+      </div>
       <CrownMark />
       <strong>THE FINAL</strong>
       <small>Takes the rest</small>
       <span className="bracket-line" />
-      <div className="bracket-pair"><i>?</i><i>?</i></div>
-      <p>ROUND 2<br /><b>$25</b></p>
+      <div className="bracket-pair">
+        {[0, 1].map((index) => (
+          <i key={index}>
+            <img className="bracket-pair__node" src="/assets/figma/match/bracket-node.svg" width="42" height="42" alt="" />
+            <img className="bracket-pair__question" src="/assets/figma/match/question.svg" width="7" height="11" alt="Unknown creator" />
+          </i>
+        ))}
+      </div>
+      <p>
+        <img src="/assets/figma/match/round-2.svg" width="50" height="9" alt="Round 2" />
+        <img src="/assets/figma/match/round-prize-25.svg" width="21" height="10" alt="$25" />
+      </p>
     </div>
   );
 }
@@ -266,7 +292,16 @@ function MatchCard({ revealed = false, secondsRemaining = 60 }: { revealed?: boo
         </div>
       </div>
       <div className="score-row">
-        <span>167,300</span>{revealed ? <ScoutEye compact /> : <LockMark />}<span className={revealed ? 'score-is-revealed' : ''}>{revealed ? '158,200' : '•••••'}</span>
+        <span className="exact-score-pill">
+          <img className="exact-score-pill__shell" src="/assets/figma/match/score-pill.svg" width="142" height="27" alt="" aria-hidden="true" />
+          <img className="exact-score-pill__value" src="/assets/figma/match/creator-score.svg" width="44" height="11" alt="167,300" />
+        </span>
+        {revealed ? <ScoutEye compact /> : <LockMark />}
+        {revealed ? (
+          <span className="score-is-revealed">158,200</span>
+        ) : (
+          <img className="exact-hidden-score" src="/assets/figma/match/hidden-score-pill.svg" width="142" height="27" alt="Opponent score hidden" />
+        )}
       </div>
       {revealed ? (
         <div className="scout-countdown" aria-live="polite">
@@ -275,7 +310,10 @@ function MatchCard({ revealed = false, secondsRemaining = 60 }: { revealed?: boo
           <span className="scout-meter" style={meterStyle}><i /></span>
         </div>
       ) : <p>VyralScore hidden until the round ends</p>}
-      <div className="match-footer"><span>Banked $0</span><span>Win +25XP</span></div>
+      <div className="match-footer">
+        <span><img src="/assets/figma/match/banked.svg" width="40" height="9" alt="Banked" /><img src="/assets/figma/match/banked-zero.svg" width="14" height="10" alt="$0" /></span>
+        <span><img src="/assets/figma/match/win.svg" width="20" height="9" alt="Win" /><img src="/assets/figma/match/plus.svg" width="7" height="7" alt="plus" /><img src="/assets/figma/match/reward-25xp.svg" width="29" height="9" alt="25XP" /></span>
+      </div>
     </div>
   );
 }
@@ -285,6 +323,7 @@ type ScoutUseState = 'unavailable' | 'available' | 'confirming' | 'active' | 'ex
 function MatchScreen({
   scoutState = 'available',
   secondsRemaining = 60,
+  roundSecondsRemaining = ROUND_DURATION_SECONDS,
   onScoutTap,
   onConfirmScout,
   onCancelScout,
@@ -292,6 +331,7 @@ function MatchScreen({
 }: {
   scoutState?: ScoutUseState;
   secondsRemaining?: number;
+  roundSecondsRemaining?: number;
   onScoutTap?: () => void;
   onConfirmScout?: () => void;
   onCancelScout?: () => void;
@@ -305,7 +345,7 @@ function MatchScreen({
       <button className="leave-round-button" type="button" onClick={onNewRound} aria-label="Leave Round 1 and return to Pick a Ball">
         <span aria-hidden="true">×</span> Leave Round
       </button>
-      <BracketHeader />
+      <BracketHeader roundSecondsRemaining={roundSecondsRemaining} />
       <MatchCard revealed={revealed} secondsRemaining={secondsRemaining} />
       <span className="lower-bracket-line" />
       <div className="entered-label">32 CREATORS ENTER</div>
@@ -347,6 +387,8 @@ function InteractiveTrial() {
   const [scoutState, setScoutState] = useState<ScoutUseState>('unavailable');
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(60);
+  const [roundEndsAt, setRoundEndsAt] = useState<number | null>(null);
+  const [roundSecondsRemaining, setRoundSecondsRemaining] = useState(ROUND_DURATION_SECONDS);
   const [resolving, setResolving] = useState(false);
   const [showRules, setShowRules] = useState(false);
 
@@ -372,6 +414,24 @@ function InteractiveTrial() {
   }, [expiresAt, scoutState]);
 
   useEffect(() => {
+    if (phase !== 'match' || roundEndsAt === null) return;
+
+    function updateRoundCountdown() {
+      const remaining = Math.max(0, Math.ceil((roundEndsAt! - Date.now()) / 1000));
+      setRoundSecondsRemaining(remaining);
+      if (remaining === 0) {
+        setRoundEndsAt(null);
+        setExpiresAt(null);
+        setScoutState((current) => current === 'unavailable' ? 'unavailable' : 'expired');
+      }
+    }
+
+    updateRoundCountdown();
+    const timer = window.setInterval(updateRoundCountdown, 200);
+    return () => window.clearInterval(timer);
+  }, [phase, roundEndsAt]);
+
+  useEffect(() => {
     if (!resolving || selectedBall === null || winningBall === null || phase !== 'pick') return;
     const revealTimer = window.setTimeout(() => {
       setResolving(false);
@@ -389,6 +449,8 @@ function InteractiveTrial() {
     setScoutState('unavailable');
     setExpiresAt(null);
     setSecondsRemaining(60);
+    setRoundEndsAt(null);
+    setRoundSecondsRemaining(ROUND_DURATION_SECONDS);
     setResolving(false);
   }
 
@@ -400,6 +462,8 @@ function InteractiveTrial() {
 
   function startMatch() {
     setScoutState(wonScout ? 'available' : 'unavailable');
+    setRoundSecondsRemaining(ROUND_DURATION_SECONDS);
+    setRoundEndsAt(Date.now() + ROUND_DURATION_SECONDS * 1000);
     setPhase('match');
   }
 
@@ -455,6 +519,7 @@ function InteractiveTrial() {
               <MatchScreen
                 scoutState={scoutState}
                 secondsRemaining={secondsRemaining}
+                roundSecondsRemaining={roundSecondsRemaining}
                 onScoutTap={openScoutConfirmation}
                 onConfirmScout={activateScout}
                 onCancelScout={cancelScout}
@@ -559,6 +624,9 @@ const assetAudit = [
   { element: 'Docked Scout power-up', source: '58 × 75 group at 314,731 in the match frame; original orb, highlight, eye, label, count glow, and count glyph', format: '6 SVGs', status: 'Exact' },
   { element: 'Nothing result typography + CTA', source: 'Original outlined YOU PULLED, title, both body lines, muted button shell/label, and footer copy', format: '8 SVGs', status: 'Exact' },
   { element: 'Scout explainer pill', source: 'Original pill, eye, two dots, and all three outlined text layers', format: '7 SVGs', status: 'Exact' },
+  { element: 'Round 1 creator profiles', source: 'Original embedded Figma profile photos with exact green and lilac rings, glow, crop, and 97/98px export bounds', format: '2 SVGs', status: 'Exact' },
+  { element: 'Round 1 match details', source: 'Original outlined Round 2, $25, 25XP, Win, Banked, $0, score, question, plus, node, and score-capsule exports', format: '13 SVGs', status: 'Exact' },
+  { element: 'Round 1 end timer', source: 'Live absolute-time countdown styled to the Figma timer capsule; starts at 55:00 and stops at 00:00', format: 'Live UI', status: 'Mapped' },
 ];
 
 const exactPickAssets = [
@@ -634,6 +702,24 @@ const exactScoutDockAssets = [
   ['Scout count glyph', 'count-1.svg'],
 ] as const;
 
+const exactMatchAssets = [
+  ['Your profile', 'avatar-you.svg'],
+  ['Opponent profile', 'avatar-opponent.svg'],
+  ['Round 2 label', 'round-2.svg'],
+  ['Round prize', 'round-prize-25.svg'],
+  ['Unknown creator', 'question.svg'],
+  ['Bracket node', 'bracket-node.svg'],
+  ['Reward plus', 'plus.svg'],
+  ['25XP reward', 'reward-25xp.svg'],
+  ['Win label', 'win.svg'],
+  ['Banked label', 'banked.svg'],
+  ['Banked $0', 'banked-zero.svg'],
+  ['Hidden-score capsule', 'hidden-score-pill.svg'],
+  ['Hidden-score dots', 'hidden-score-dots.svg'],
+  ['Score capsule', 'score-pill.svg'],
+  ['Creator score', 'creator-score.svg'],
+] as const;
+
 function AssetAudit() {
   return (
     <section className="comparison-section audit-section">
@@ -657,9 +743,9 @@ function AssetAudit() {
       <div className="exact-asset-callout">
         <div className="exact-asset-preview"><ScoutEye /></div>
         <div>
-          <p className="kicker">VERIFIED SVG PACKAGE · 61 ORIGINAL EXPORTS</p>
-          <h3>Exact Pick-a-Ball, Scout, and Nothing assets</h3>
-          <p>The supplied Figma exports are separated into their original files. The Pick screen uses exact ball, compact-eye, explainer, status-bar, title, and supporting-copy artwork. Scout uses its layered award core, rings, CTA, footer, and six-layer docked power-up badge; Nothing uses its original layered ball and every outlined result-screen label.</p>
+          <p className="kicker">VERIFIED SVG PACKAGE · 76 ORIGINAL EXPORTS</p>
+          <h3>Exact Pick-a-Ball, Scout, Nothing, and match assets</h3>
+          <p>The supplied Figma exports are separated into their original files. The Pick screen uses exact ball, compact-eye, explainer, status-bar, title, and supporting-copy artwork. Scout uses its layered award core, rings, CTA, footer, and six-layer docked power-up badge; Nothing uses its original layered ball and every outlined result-screen label. The live match now uses both exact creator photos, score capsules, bracket nodes, and reward labels.</p>
           <div className="asset-links">
             <a href="/assets/figma/pick/mystery-ball-complete.svg">Mystery ball</a>
             <a href="/assets/figma/pick/compact-eye.svg">Compact eye</a>
@@ -671,6 +757,9 @@ function AssetAudit() {
             <a href="/assets/figma/scout-dock/orb.svg">Docked Scout</a>
             <a href="/assets/figma/nothing/title-nothing.svg">Nothing title</a>
             <a href="/assets/figma/nothing/ball-glass.svg">Nothing ball</a>
+            <a href="/assets/figma/match/avatar-you.svg">Your profile</a>
+            <a href="/assets/figma/match/avatar-opponent.svg">Opponent profile</a>
+            <a href="/assets/figma/match/hidden-score-pill.svg">Hidden score</a>
           </div>
         </div>
       </div>
@@ -705,6 +794,15 @@ function AssetAudit() {
         {exactScoutDockAssets.map(([label, file]) => (
           <a href={`/assets/figma/scout-dock/${file}`} key={file}>
             <span><img src={`/assets/figma/scout-dock/${file}`} alt="" aria-hidden="true" /></span>
+            <strong>{label}</strong>
+            <small>{file}</small>
+          </a>
+        ))}
+      </div>
+      <div className="exact-source-grid" aria-label="Fifteen exact Round 1 match SVG exports from Figma">
+        {exactMatchAssets.map(([label, file]) => (
+          <a href={`/assets/figma/match/${file}`} key={file}>
+            <span><img src={`/assets/figma/match/${file}`} alt="" aria-hidden="true" /></span>
             <strong>{label}</strong>
             <small>{file}</small>
           </a>
