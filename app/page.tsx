@@ -465,44 +465,26 @@ function MobileGameGuide({
     <div className="mobile-guide-overlay" role="dialog" aria-modal="true" aria-labelledby="mobile-guide-title">
       <div className="mobile-guide-sheet">
         <button className="mobile-guide-close" type="button" aria-label="Close game and scoring guide" onClick={onClose}>×</button>
-        <p className="mobile-guide-kicker">PRIVATE TRIAL GUIDE</p>
-        <h3 id="mobile-guide-title">Game + scoring</h3>
+        <p className="mobile-guide-kicker">QUICK GUIDE</p>
+        <h3 id="mobile-guide-title">How to play</h3>
         <button className="guide-sound-toggle" type="button" aria-pressed={soundEnabled} onClick={onToggleSound}>
           <span><i aria-hidden="true">♪</i> Sound effects</span>
           <b>{soundEnabled ? 'On' : 'Off'}</b>
         </button>
         <section>
-          <h4>How this trial works</h4>
+          <h4>Three simple steps</h4>
           <ol>
-            <li><b>Pick one ball.</b><span>One random ball holds Scout. The other two hold Nothing.</span></li>
-            <li><b>Start the round.</b><span>If you win Scout, it docks beside your live match.</span></li>
-            <li><b>Spend it once.</b><span>Scout reveals the opponent&apos;s hidden VyralScore without changing points, rankings, or the bracket.</span></li>
-            <li><b>Exactly 60 seconds.</b><span>The score automatically hides and locks again when the timer expires.</span></li>
+            <li><b>Pick an orb.</b><span>One hides Scout. The other two hold Nothing.</span></li>
+            <li><b>Win Scout.</b><span>Start the round, then tap Scout whenever you want to use it.</span></li>
+            <li><b>Reveal their score.</b><span>See the opponent&apos;s VyralScore for 60 seconds. Then it locks again.</span></li>
           </ol>
-          <div className="guide-spec-note"><b>Trial scope</b><span>The full Power Move spec also includes Empty and 5XP outcomes plus persistent inventory. Those are intentionally outside this standalone CEO trial.</span></div>
         </section>
-        <section className="scoring-guide">
-          <h4>Latest locked VyralScore</h4>
-          <p className="scoring-guide__warning">Internal reference only. Production should display the final score—not expose this formula.</p>
-          <p className="scoring-guide__superseded">The June 2026 launch spec supersedes the older +1/+2/+3 and views-only drafts.</p>
-          <div className="scoring-formula">
-            <span>Performance score</span>
-            <strong>Views + Likes×3 + Comments×90<br />+ Saves×70 + Shares×50</strong>
-          </div>
-          <div className="scoring-formula">
-            <span>Breakout multiplier</span>
-            <strong>Views ÷ (Followers + 2,000)</strong>
-            <small>Capped from 1.0× to 2.0×</small>
-          </div>
-          <div className="scoring-formula scoring-formula--final">
-            <span>Final score</span>
-            <strong>Performance score × Breakout</strong>
-            <small>Higher Final Score advances</small>
-          </div>
-          <ul className="scoring-notes">
-            <li>Instagram totals are cumulative and never reset between rounds.</li>
-            <li>The latest polled API totals are the official result.</li>
-            <li>Opponent scores stay hidden except during Scout&apos;s 60-second reveal.</li>
+        <section>
+          <h4>How scoring works</h4>
+          <ul className="simple-scoring-list">
+            <li><b>Views + engagement</b><span>Views, likes, comments, saves, and shares build the score.</span></li>
+            <li><b>Strong actions matter more</b><span>Comments, saves, and shares count more than likes.</span></li>
+            <li><b>Highest score advances</b><span>Scout only reveals a score. It never changes the points.</span></li>
           </ul>
         </section>
       </div>
@@ -772,14 +754,22 @@ function InteractiveTrial() {
 }
 
 function StandaloneGame() {
-  const [scale, setScale] = useState(1);
+  const [fit, setFit] = useState({ scaleX: 1, scaleY: 1, width: 402, height: 874 });
 
   useEffect(() => {
     function fitGameToViewport() {
       const viewport = window.visualViewport;
       const width = viewport?.width ?? window.innerWidth;
       const height = viewport?.height ?? window.innerHeight;
-      setScale(Math.min(width / 402, height / 874, 1));
+      const isPhone = width <= 600;
+
+      if (isPhone) {
+        setFit({ scaleX: width / 402, scaleY: height / 874, width, height });
+        return;
+      }
+
+      const scale = Math.min(width / 402, height / 874, 1);
+      setFit({ scaleX: scale, scaleY: scale, width: 402 * scale, height: 874 * scale });
     }
 
     fitGameToViewport();
@@ -793,8 +783,8 @@ function StandaloneGame() {
 
   return (
     <main className="standalone-root">
-      <div className="standalone-fit" style={{ width: 402 * scale, height: 874 * scale }}>
-        <div className="standalone-canvas" style={{ transform: `scale(${scale})` }}>
+      <div className="standalone-fit" style={{ width: fit.width, height: fit.height }}>
+        <div className="standalone-canvas" style={{ transform: `scale(${fit.scaleX}, ${fit.scaleY})` }}>
           <InteractiveTrial />
         </div>
       </div>
