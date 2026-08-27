@@ -198,7 +198,7 @@ function PickBallScreen({
   );
 }
 
-function ResultScreen({ result, onStart, preview = false }: { result: 'scout' | 'nothing'; onStart?: () => void; preview?: boolean }) {
+function ResultScreen({ result, onStart }: { result: 'scout' | 'nothing'; onStart?: () => void }) {
   const won = result === 'scout';
   return (
     <Phone className={`phone--result phone--result-${result}`}>
@@ -227,13 +227,13 @@ function ResultScreen({ result, onStart, preview = false }: { result: 'scout' | 
         </div>
       )}
       {won ? (
-        <button className="exact-scout-cta" type="button" aria-label="Start Round 1" onClick={onStart} disabled={preview}>
+        <button className="exact-scout-cta" type="button" aria-label="Start Round 1" onClick={onStart}>
           <img className="exact-scout-cta__base" src="/assets/figma/scout/cta-base.svg" width="358" height="54" alt="" />
           <img className="exact-scout-cta__highlight" src="/assets/figma/scout/cta-highlight.svg" width="358" height="27" alt="" />
           <img className="exact-scout-cta__label" src="/assets/figma/scout/cta-label.svg" width="106" height="13" alt="" />
         </button>
       ) : (
-        <button className="exact-nothing-cta" type="button" aria-label="Start Round 1" onClick={onStart} disabled={preview}>
+        <button className="exact-nothing-cta" type="button" aria-label="Start Round 1" onClick={onStart}>
           <img className="exact-nothing-cta__shell" src="/assets/figma/nothing/cta-shell.svg" width="359" height="55" alt="" />
           <img className="exact-nothing-cta__label" src="/assets/figma/nothing/cta-label.svg" width="106" height="13" alt="" />
         </button>
@@ -361,11 +361,14 @@ function MatchScreen({
   const confirmation = scoutState === 'confirming';
   const revealed = scoutState === 'active';
   const hasScout = scoutState !== 'unavailable';
+  const [showEndRoundConfirmation, setShowEndRoundConfirmation] = useState(false);
   return (
-    <Phone className={`phone--match phone--scout-${scoutState}${confirmation ? ' phone--blurred' : ''}`}>
-      <button className="leave-round-button" type="button" onClick={onNewRound} aria-label="Leave Round 1 and return to Pick a Ball">
-        <span aria-hidden="true">‹</span> Leave
-      </button>
+    <Phone className={`phone--match phone--scout-${scoutState}${confirmation ? ' phone--blurred' : ''}${hasScout ? ' phone--has-end-round' : ''}`}>
+      {hasScout && (
+        <button className="end-round-button" type="button" onClick={() => setShowEndRoundConfirmation(true)} aria-label="End Round 1">
+          <span aria-hidden="true">‹</span>
+        </button>
+      )}
       <BracketHeader roundSecondsRemaining={roundSecondsRemaining} />
       <MatchCard revealed={revealed} secondsRemaining={secondsRemaining} expiresAt={expiresAt} />
       <div className="entered-label">32 CREATORS ENTER</div>
@@ -381,6 +384,20 @@ function MatchScreen({
             <p className="sr-only">See @ronellegan&apos;s hidden VyralScore for 60 seconds. One use per round.</p>
             <button className="confirmation-sheet__action confirmation-sheet__action--use" type="button" onClick={onConfirmScout}>Use Scout</button>
             <button className="confirmation-sheet__action confirmation-sheet__action--later" type="button" onClick={onCancelScout}>Not yet</button>
+          </div>
+        </div>
+      )}
+      {showEndRoundConfirmation && (
+        <div className="end-round-overlay">
+          <button className="end-round-backdrop" type="button" aria-label="Keep playing" onClick={() => setShowEndRoundConfirmation(false)} />
+          <div className="end-round-dialog" role="alertdialog" aria-modal="true" aria-labelledby="end-round-title" aria-describedby="end-round-description">
+            <span className="end-round-dialog__icon" aria-hidden="true">!</span>
+            <h3 id="end-round-title">End Round?</h3>
+            <p id="end-round-description">Your Scout and this round&apos;s progress will be lost.</p>
+            <div className="end-round-dialog__actions">
+              <button type="button" onClick={() => setShowEndRoundConfirmation(false)}>Keep Playing</button>
+              <button className="end-round-dialog__confirm" type="button" onClick={onNewRound}>End Round</button>
+            </div>
           </div>
         </div>
       )}
@@ -451,7 +468,7 @@ function InteractiveTrial() {
     const revealTimer = window.setTimeout(() => {
       setResolving(false);
       setPhase('result');
-    }, 620);
+    }, 460);
     return () => window.clearTimeout(revealTimer);
   }, [phase, resolving, selectedBall, winningBall]);
 
@@ -526,13 +543,8 @@ function InteractiveTrial() {
           </div>
         </div>
         <div className="trial-stage">
-          <div className={`trial-screen trial-screen--${phase}${phase === 'result' ? ' trial-screen--result-settled' : ''}`} key={phase}>
+          <div className={`trial-screen trial-screen--${phase}`} key={phase}>
             {phase === 'pick' && <PickBallScreen onPick={pickBall} selectedBall={selectedBall} resolving={resolving} />}
-            {phase === 'pick' && resolving && selectedBall !== null && winningBall !== null && (
-              <div className="result-transition-layer trial-screen--result" aria-hidden="true">
-                <ResultScreen result={selectedBall === winningBall ? 'scout' : 'nothing'} preview />
-              </div>
-            )}
             {phase === 'result' && <ResultScreen result={wonScout ? 'scout' : 'nothing'} onStart={startMatch} />}
             {phase === 'match' && (
               <MatchScreen
