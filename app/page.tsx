@@ -755,49 +755,10 @@ function InteractiveTrial() {
 }
 
 function StandaloneGame() {
-  const [fit, setFit] = useState({ scale: 1, width: 402, height: 874, offsetX: 0, offsetY: 0, phone: false });
-
-  useEffect(() => {
-    function fitGameToViewport() {
-      const viewport = window.visualViewport;
-      const width = viewport?.width ?? window.innerWidth;
-      const height = viewport?.height ?? window.innerHeight;
-      const isPhone = width <= 600;
-
-      if (isPhone) {
-        const cropTop = 48;
-        const scale = Math.min(width / 402, height / (874 - cropTop));
-        setFit({
-          scale,
-          width,
-          height,
-          offsetX: (width - 402 * scale) / 2,
-          offsetY: -cropTop * scale,
-          phone: true,
-        });
-        return;
-      }
-
-      const scale = Math.min(width / 402, height / 874, 1);
-      setFit({ scale, width: 402 * scale, height: 874 * scale, offsetX: 0, offsetY: 0, phone: false });
-    }
-
-    fitGameToViewport();
-    window.addEventListener('resize', fitGameToViewport);
-    window.visualViewport?.addEventListener('resize', fitGameToViewport);
-    return () => {
-      window.removeEventListener('resize', fitGameToViewport);
-      window.visualViewport?.removeEventListener('resize', fitGameToViewport);
-    };
-  }, []);
-
   return (
-    <main className={`standalone-root${fit.phone ? ' standalone-root--phone' : ''}`}>
-      <div className="standalone-fit" style={{ width: fit.width, height: fit.height }}>
-        <div
-          className="standalone-canvas"
-          style={{ marginLeft: fit.offsetX, marginTop: fit.offsetY, transform: `scale(${fit.scale})` }}
-        >
+    <main className="standalone-root standalone-root--phone">
+      <div className="standalone-fit">
+        <div className="standalone-canvas">
           <InteractiveTrial />
         </div>
       </div>
