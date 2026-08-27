@@ -103,7 +103,7 @@ function ExactNothingBall({ className = '' }: { className?: string }) {
 }
 
 function LockMark() {
-  return <span className="lock-mark" aria-label="Locked"><i /></span>;
+  return <img className="lock-mark" src="/assets/figma/match/lock.svg" width="15" height="15" alt="Locked" />;
 }
 
 function CrownMark() {
@@ -198,7 +198,7 @@ function PickBallScreen({
   );
 }
 
-function ResultScreen({ result, onStart }: { result: 'scout' | 'nothing'; onStart?: () => void }) {
+function ResultScreen({ result, onStart, preview = false }: { result: 'scout' | 'nothing'; onStart?: () => void; preview?: boolean }) {
   const won = result === 'scout';
   return (
     <Phone className={`phone--result phone--result-${result}`}>
@@ -227,13 +227,13 @@ function ResultScreen({ result, onStart }: { result: 'scout' | 'nothing'; onStar
         </div>
       )}
       {won ? (
-        <button className="exact-scout-cta" type="button" aria-label="Start Round 1" onClick={onStart}>
+        <button className="exact-scout-cta" type="button" aria-label="Start Round 1" onClick={onStart} disabled={preview}>
           <img className="exact-scout-cta__base" src="/assets/figma/scout/cta-base.svg" width="358" height="54" alt="" />
           <img className="exact-scout-cta__highlight" src="/assets/figma/scout/cta-highlight.svg" width="358" height="27" alt="" />
           <img className="exact-scout-cta__label" src="/assets/figma/scout/cta-label.svg" width="106" height="13" alt="" />
         </button>
       ) : (
-        <button className="exact-nothing-cta" type="button" aria-label="Start Round 1" onClick={onStart}>
+        <button className="exact-nothing-cta" type="button" aria-label="Start Round 1" onClick={onStart} disabled={preview}>
           <img className="exact-nothing-cta__shell" src="/assets/figma/nothing/cta-shell.svg" width="359" height="55" alt="" />
           <img className="exact-nothing-cta__label" src="/assets/figma/nothing/cta-label.svg" width="106" height="13" alt="" />
         </button>
@@ -451,7 +451,7 @@ function InteractiveTrial() {
     const revealTimer = window.setTimeout(() => {
       setResolving(false);
       setPhase('result');
-    }, 540);
+    }, 620);
     return () => window.clearTimeout(revealTimer);
   }, [phase, resolving, selectedBall, winningBall]);
 
@@ -526,8 +526,13 @@ function InteractiveTrial() {
           </div>
         </div>
         <div className="trial-stage">
-          <div className={`trial-screen trial-screen--${phase}`} key={phase}>
+          <div className={`trial-screen trial-screen--${phase}${phase === 'result' ? ' trial-screen--result-settled' : ''}`} key={phase}>
             {phase === 'pick' && <PickBallScreen onPick={pickBall} selectedBall={selectedBall} resolving={resolving} />}
+            {phase === 'pick' && resolving && selectedBall !== null && winningBall !== null && (
+              <div className="result-transition-layer trial-screen--result" aria-hidden="true">
+                <ResultScreen result={selectedBall === winningBall ? 'scout' : 'nothing'} preview />
+              </div>
+            )}
             {phase === 'result' && <ResultScreen result={wonScout ? 'scout' : 'nothing'} onStart={startMatch} />}
             {phase === 'match' && (
               <MatchScreen
@@ -738,6 +743,7 @@ const exactMatchAssets = [
   ['Hidden-score dots', 'hidden-score-dots.svg'],
   ['Score capsule', 'score-pill.svg'],
   ['Creator score', 'creator-score.svg'],
+  ['Hidden-score lock', 'lock.svg'],
 ] as const;
 
 const exactScoutSheetAssets = [
@@ -772,7 +778,7 @@ function AssetAudit() {
       <div className="exact-asset-callout">
         <div className="exact-asset-preview"><ScoutEye /></div>
         <div>
-          <p className="kicker">VERIFIED SVG PACKAGE · 86 ORIGINAL EXPORTS</p>
+          <p className="kicker">VERIFIED SVG PACKAGE · 87 ORIGINAL EXPORTS</p>
           <h3>Exact Pick-a-Ball, Scout, Nothing, and match assets</h3>
           <p>The supplied Figma exports are separated into their original files. The Pick screen uses exact ball, compact-eye, explainer, status-bar, title, and supporting-copy artwork. Scout uses its layered award core, rings, CTA, footer, and six-layer docked power-up badge; Nothing uses its original layered ball and every outlined result-screen label. The live match now uses both exact creator photos, score capsules, bracket nodes, and reward labels.</p>
           <div className="asset-links">
@@ -830,7 +836,7 @@ function AssetAudit() {
           </a>
         ))}
       </div>
-      <div className="exact-source-grid" aria-label="Nineteen exact Round 1 match SVG exports from Figma">
+      <div className="exact-source-grid" aria-label="Twenty exact Round 1 match SVG exports from Figma">
         {exactMatchAssets.map(([label, file]) => (
           <a href={`/assets/figma/match/${file}`} key={file}>
             <span><img src={`/assets/figma/match/${file}`} alt="" aria-hidden="true" /></span>
