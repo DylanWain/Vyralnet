@@ -704,6 +704,11 @@ function InteractiveTrial() {
     />
   ) : undefined;
 
+  const openGuide = useCallback(() => {
+    window.scrollTo(0, 0);
+    setShowRules(true);
+  }, []);
+
   return (
     <div className="standalone-trial" aria-label="Pick-a-Ball Scout game">
       <div className={`trial-screen trial-screen--${phase}`}>
@@ -714,8 +719,6 @@ function InteractiveTrial() {
               selectedBall={selectedBall}
               resolving={resolving || resultTransitioning}
               mobileMode
-              onOpenGuide={phase === 'pick' ? () => setShowRules(true) : undefined}
-              guideOverlay={phase === 'pick' ? guideOverlay : undefined}
             />
           </div>
         )}
@@ -725,8 +728,6 @@ function InteractiveTrial() {
               result={wonScout ? 'scout' : 'nothing'}
               onStart={startMatch}
               mobileMode
-              onOpenGuide={() => setShowRules(true)}
-              guideOverlay={guideOverlay}
             />
           </div>
         )}
@@ -742,7 +743,7 @@ function InteractiveTrial() {
               onCancelScout={cancelScout}
               onNewRound={resetRound}
               mobileMode
-              onOpenGuide={() => setShowRules(true)}
+              onOpenGuide={openGuide}
               guideOverlay={guideOverlay}
             />
           </div>
@@ -754,7 +755,7 @@ function InteractiveTrial() {
 }
 
 function StandaloneGame() {
-  const [fit, setFit] = useState({ scaleX: 1, scaleY: 1, width: 402, height: 874 });
+  const [fit, setFit] = useState({ scale: 1, width: 402, height: 874, offsetY: 0, phone: false });
 
   useEffect(() => {
     function fitGameToViewport() {
@@ -764,12 +765,15 @@ function StandaloneGame() {
       const isPhone = width <= 600;
 
       if (isPhone) {
-        setFit({ scaleX: width / 402, scaleY: height / 874, width, height });
+        const scale = width / 402;
+        const cropTop = 0;
+        const cropBottom = 120;
+        setFit({ scale, width, height: (874 - cropTop - cropBottom) * scale, offsetY: -cropTop, phone: true });
         return;
       }
 
       const scale = Math.min(width / 402, height / 874, 1);
-      setFit({ scaleX: scale, scaleY: scale, width: 402 * scale, height: 874 * scale });
+      setFit({ scale, width: 402 * scale, height: 874 * scale, offsetY: 0, phone: false });
     }
 
     fitGameToViewport();
@@ -782,9 +786,9 @@ function StandaloneGame() {
   }, []);
 
   return (
-    <main className="standalone-root">
+    <main className={`standalone-root${fit.phone ? ' standalone-root--phone' : ''}`}>
       <div className="standalone-fit" style={{ width: fit.width, height: fit.height }}>
-        <div className="standalone-canvas" style={{ transform: `scale(${fit.scaleX}, ${fit.scaleY})` }}>
+        <div className="standalone-canvas" style={{ transform: `scale(${fit.scale}) translateY(${fit.offsetY}px)` }}>
           <InteractiveTrial />
         </div>
       </div>
