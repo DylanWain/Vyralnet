@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 const FIGMA_FILE =
   'https://embed.figma.com/design/90sjA2iJxWs1XqRogzXv3r/Vyralnet-Game-Design';
 
 const ROUND_DURATION_SECONDS = 55 * 60;
+const SCOUT_DURATION_SECONDS = 60;
+const SCOUT_DURATION_MS = SCOUT_DURATION_SECONDS * 1000;
 
 function formatClock(totalSeconds: number) {
   const safeSeconds = Math.max(0, totalSeconds);
@@ -270,11 +272,35 @@ function BracketHeader({ roundSecondsRemaining }: { roundSecondsRemaining: numbe
   );
 }
 
-function MatchCard({ revealed = false, secondsRemaining = 60 }: { revealed?: boolean; secondsRemaining?: number }) {
-  const meterStyle = {
-    '--scout-progress': `${(secondsRemaining / 60) * 100}%`,
-    '--scout-angle': `${(secondsRemaining / 60) * 360}deg`,
-  } as CSSProperties;
+function SmoothScoutCountdown({ expiresAt, secondsRemaining }: { expiresAt: number | null; secondsRemaining: number }) {
+  const ringRef = useRef<HTMLSpanElement>(null);
+  const barRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    let frame = 0;
+
+    function drawProgress() {
+      const remainingMs = expiresAt === null ? SCOUT_DURATION_MS : Math.max(0, expiresAt - Date.now());
+      const progress = Math.min(1, remainingMs / SCOUT_DURATION_MS);
+      ringRef.current?.style.setProperty('--scout-angle', `${progress * 360}deg`);
+      if (barRef.current) barRef.current.style.transform = `scaleX(${progress})`;
+      if (expiresAt !== null && remainingMs > 0) frame = window.requestAnimationFrame(drawProgress);
+    }
+
+    drawProgress();
+    return () => window.cancelAnimationFrame(frame);
+  }, [expiresAt]);
+
+  return (
+    <div className="scout-countdown" aria-live="polite">
+      <span ref={ringRef} className="scout-timer-ring" aria-hidden="true"><i>{secondsRemaining}</i></span>
+      <p className="scout-timer"><b>Scout active</b><br />seconds until the score locks</p>
+      <span className="scout-meter" aria-hidden="true"><i ref={barRef} /></span>
+    </div>
+  );
+}
+
+function MatchCard({ revealed = false, secondsRemaining = 60, expiresAt = null }: { revealed?: boolean; secondsRemaining?: number; expiresAt?: number | null }) {
   return (
     <div className={`match-card${revealed ? ' match-card--revealed' : ''}`}>
       <img className="match-card__shell" src="/assets/figma/match/match-card-shell.svg" width="402" height="393" alt="" aria-hidden="true" />
@@ -302,13 +328,7 @@ function MatchCard({ revealed = false, secondsRemaining = 60 }: { revealed?: boo
           <img className="exact-hidden-score" src="/assets/figma/match/hidden-score-pill.svg" width="142" height="27" alt="Opponent score hidden" />
         )}
       </div>
-      {revealed ? (
-        <div className="scout-countdown" aria-live="polite">
-          <span className="scout-timer-ring" style={meterStyle}><i>{secondsRemaining}</i></span>
-          <p className="scout-timer"><b>Scout active</b><br />seconds until the score locks</p>
-          <span className="scout-meter" style={meterStyle}><i /></span>
-        </div>
-      ) : <p>VyralScore hidden until the round ends</p>}
+      {revealed ? <SmoothScoutCountdown expiresAt={expiresAt} secondsRemaining={secondsRemaining} /> : <p>VyralScore hidden until the round ends</p>}
       <div className="match-footer">
         <span><img src="/assets/figma/match/banked.svg" width="40" height="9" alt="Banked" /><img src="/assets/figma/match/banked-zero.svg" width="14" height="10" alt="$0" /></span>
         <span><img src="/assets/figma/match/win.svg" width="20" height="9" alt="Win" /><img src="/assets/figma/match/plus.svg" width="7" height="7" alt="plus" /><img src="/assets/figma/match/reward-25xp.svg" width="29" height="9" alt="25XP" /></span>
@@ -322,6 +342,7 @@ type ScoutUseState = 'unavailable' | 'available' | 'confirming' | 'active' | 'ex
 function MatchScreen({
   scoutState = 'available',
   secondsRemaining = 60,
+  expiresAt = null,
   roundSecondsRemaining = ROUND_DURATION_SECONDS,
   onScoutTap,
   onConfirmScout,
@@ -330,6 +351,7 @@ function MatchScreen({
 }: {
   scoutState?: ScoutUseState;
   secondsRemaining?: number;
+  expiresAt?: number | null;
   roundSecondsRemaining?: number;
   onScoutTap?: () => void;
   onConfirmScout?: () => void;
@@ -342,10 +364,10 @@ function MatchScreen({
   return (
     <Phone className={`phone--match phone--scout-${scoutState}${confirmation ? ' phone--blurred' : ''}`}>
       <button className="leave-round-button" type="button" onClick={onNewRound} aria-label="Leave Round 1 and return to Pick a Ball">
-        <span aria-hidden="true">×</span> Leave Round
+        <span aria-hidden="true">‹</span> Leave
       </button>
       <BracketHeader roundSecondsRemaining={roundSecondsRemaining} />
-      <MatchCard revealed={revealed} secondsRemaining={secondsRemaining} />
+      <MatchCard revealed={revealed} secondsRemaining={secondsRemaining} expiresAt={expiresAt} />
       <div className="entered-label">32 CREATORS ENTER</div>
       {hasScout && <ScoutBadge onActivate={scoutState === 'available' ? onScoutTap : undefined} used={scoutState === 'expired'} />}
       {(scoutState === 'expired' || scoutState === 'unavailable') && (
@@ -353,13 +375,12 @@ function MatchScreen({
       )}
       {confirmation && (
         <div className="confirmation-overlay">
-          <div className="confirmation-sheet">
-            <span className="sheet-handle" />
-            <ScoutEye />
-            <h3>Use Scout?</h3>
-            <p>See <b>@ronellegan&apos;s</b> hidden VyralScore<br />for 60 seconds. One use per round.</p>
-            <button className="phone-cta" type="button" onClick={onConfirmScout}>Use Scout</button>
-            <button className="phone-cta phone-cta--secondary" type="button" onClick={onCancelScout}>Not yet</button>
+          <div className="confirmation-sheet" role="dialog" aria-modal="true" aria-labelledby="scout-confirmation-title">
+            <img className="confirmation-sheet__exact" src="/assets/figma/scout-sheet/confirmation-complete.svg" width="402" height="443" alt="" aria-hidden="true" />
+            <h3 className="sr-only" id="scout-confirmation-title">Use Scout?</h3>
+            <p className="sr-only">See @ronellegan&apos;s hidden VyralScore for 60 seconds. One use per round.</p>
+            <button className="confirmation-sheet__action confirmation-sheet__action--use" type="button" onClick={onConfirmScout}>Use Scout</button>
+            <button className="confirmation-sheet__action confirmation-sheet__action--later" type="button" onClick={onCancelScout}>Not yet</button>
           </div>
         </div>
       )}
@@ -380,19 +401,15 @@ function randomBallIndex() {
 
 function InteractiveTrial() {
   const [phase, setPhase] = useState<TrialPhase>('pick');
-  const [winningBall, setWinningBall] = useState<number | null>(null);
+  const [winningBall, setWinningBall] = useState<number | null>(() => randomBallIndex());
   const [selectedBall, setSelectedBall] = useState<number | null>(null);
   const [scoutState, setScoutState] = useState<ScoutUseState>('unavailable');
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
-  const [secondsRemaining, setSecondsRemaining] = useState(60);
+  const [secondsRemaining, setSecondsRemaining] = useState(SCOUT_DURATION_SECONDS);
   const [roundEndsAt, setRoundEndsAt] = useState<number | null>(null);
   const [roundSecondsRemaining, setRoundSecondsRemaining] = useState(ROUND_DURATION_SECONDS);
   const [resolving, setResolving] = useState(false);
   const [showRules, setShowRules] = useState(false);
-
-  useEffect(() => {
-    setWinningBall(randomBallIndex());
-  }, []);
 
   useEffect(() => {
     if (scoutState !== 'active' || expiresAt === null) return;
@@ -446,7 +463,7 @@ function InteractiveTrial() {
     setPhase('pick');
     setScoutState('unavailable');
     setExpiresAt(null);
-    setSecondsRemaining(60);
+    setSecondsRemaining(SCOUT_DURATION_SECONDS);
     setRoundEndsAt(null);
     setRoundSecondsRemaining(ROUND_DURATION_SECONDS);
     setResolving(false);
@@ -471,9 +488,8 @@ function InteractiveTrial() {
 
   function activateScout() {
     if (scoutState !== 'confirming') return;
-    const duration = 60;
-    setSecondsRemaining(duration);
-    setExpiresAt(Date.now() + duration * 1000);
+    setSecondsRemaining(SCOUT_DURATION_SECONDS);
+    setExpiresAt(Date.now() + SCOUT_DURATION_MS);
     setScoutState('active');
   }
 
@@ -517,6 +533,7 @@ function InteractiveTrial() {
               <MatchScreen
                 scoutState={scoutState}
                 secondsRemaining={secondsRemaining}
+                expiresAt={expiresAt}
                 roundSecondsRemaining={roundSecondsRemaining}
                 onScoutTap={openScoutConfirmation}
                 onConfirmScout={activateScout}
@@ -723,6 +740,15 @@ const exactMatchAssets = [
   ['Creator score', 'creator-score.svg'],
 ] as const;
 
+const exactScoutSheetAssets = [
+  ['Complete Scout confirmation', 'confirmation-complete.svg'],
+  ['Confirmation glass shell', 'sheet-shell.svg'],
+  ['Use Scout button', 'use-scout-button.svg'],
+  ['Not yet button shell', 'not-yet-shell.svg'],
+  ['Not yet label', 'not-yet-label.svg'],
+  ['Confirmation helper copy', 'helper-copy.svg'],
+] as const;
+
 function AssetAudit() {
   return (
     <section className="comparison-section audit-section">
@@ -746,7 +772,7 @@ function AssetAudit() {
       <div className="exact-asset-callout">
         <div className="exact-asset-preview"><ScoutEye /></div>
         <div>
-          <p className="kicker">VERIFIED SVG PACKAGE · 80 ORIGINAL EXPORTS</p>
+          <p className="kicker">VERIFIED SVG PACKAGE · 86 ORIGINAL EXPORTS</p>
           <h3>Exact Pick-a-Ball, Scout, Nothing, and match assets</h3>
           <p>The supplied Figma exports are separated into their original files. The Pick screen uses exact ball, compact-eye, explainer, status-bar, title, and supporting-copy artwork. Scout uses its layered award core, rings, CTA, footer, and six-layer docked power-up badge; Nothing uses its original layered ball and every outlined result-screen label. The live match now uses both exact creator photos, score capsules, bracket nodes, and reward labels.</p>
           <div className="asset-links">
@@ -808,6 +834,15 @@ function AssetAudit() {
         {exactMatchAssets.map(([label, file]) => (
           <a href={`/assets/figma/match/${file}`} key={file}>
             <span><img src={`/assets/figma/match/${file}`} alt="" aria-hidden="true" /></span>
+            <strong>{label}</strong>
+            <small>{file}</small>
+          </a>
+        ))}
+      </div>
+      <div className="exact-source-grid" aria-label="Six exact Scout confirmation SVG exports from Figma">
+        {exactScoutSheetAssets.map(([label, file]) => (
+          <a href={`/assets/figma/scout-sheet/${file}`} key={file}>
+            <span><img src={`/assets/figma/scout-sheet/${file}`} alt="" aria-hidden="true" /></span>
             <strong>{label}</strong>
             <small>{file}</small>
           </a>
