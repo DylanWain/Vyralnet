@@ -135,10 +135,14 @@ function ScoutBadge({ count = 1, onActivate, used = false }: { count?: number; o
     >
       <img className="scout-badge__orb" src="/assets/figma/scout-dock/orb.svg" width="118" height="118" alt="" aria-hidden="true" />
       <img className="scout-badge__highlight" src="/assets/figma/scout-dock/highlight.svg" width="50" height="49" alt="" aria-hidden="true" />
-      <img className="scout-badge__eye" src="/assets/figma/scout-dock/eye.svg" width="20" height="15" alt="" aria-hidden="true" />
+      {used ? (
+        <img className="scout-badge__lock" src="/assets/figma/match/lock.svg" width="14" height="15" alt="" aria-hidden="true" />
+      ) : (
+        <img className="scout-badge__eye" src="/assets/figma/scout-dock/eye.svg" width="20" height="15" alt="" aria-hidden="true" />
+      )}
       <img className="scout-badge__label" src="/assets/figma/scout-dock/label-scout.svg" width="39" height="9" alt="" aria-hidden="true" />
       <img className="scout-badge__count-glow" src="/assets/figma/scout-dock/count-glow.svg" width="47" height="47" alt="" aria-hidden="true" />
-      {count === 1 && <img className="scout-badge__count" src="/assets/figma/scout-dock/count-1.svg" width="3" height="6" alt="" aria-hidden="true" />}
+      {!used && count === 1 && <img className="scout-badge__count" src="/assets/figma/scout-dock/count-1.svg" width="3" height="6" alt="" aria-hidden="true" />}
     </button>
   );
 }
@@ -420,7 +424,7 @@ function MatchScreen({
       <MatchCard revealed={revealed} secondsRemaining={secondsRemaining} expiresAt={expiresAt} />
       <div className="entered-label">32 CREATORS ENTER</div>
       {hasScout && <ScoutBadge onActivate={scoutState === 'available' ? onScoutTap : undefined} used={scoutState === 'expired'} />}
-      {(scoutState === 'expired' || scoutState === 'unavailable') && (
+      {roundSecondsRemaining === 0 && (
         <button className="round-restart-button" type="button" onClick={onNewRound}>Play Round 1 Again</button>
       )}
       {confirmation && (

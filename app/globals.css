@@ -202,12 +202,13 @@ h1 { margin:0; font-size:clamp(42px,6vw,82px); line-height:.94; letter-spacing:-
 .scout-badge__orb{top:-30px;left:-30px;width:118px;height:118px}
 .scout-badge__highlight{top:-11.5px;left:-8.18px;width:50px;height:49px}
 .scout-badge__eye{top:23.5px;left:19px;width:20px;height:15px}
+.scout-badge__lock{top:23px;left:22px;width:14px;height:15px;opacity:.78}
 .scout-badge__label{top:66px;left:9.5px;width:39px;height:9px}
 .scout-badge__count-glow{top:-16px;left:26px;width:47px;height:47px}
 .scout-badge__count{top:4px;left:47.5px;width:3px;height:6px}
 .scout-badge:focus-visible{outline:3px solid #b8eb6f;outline-offset:8px;border-radius:50%}
 .scout-badge:disabled{cursor:default}
-.scout-badge--used{opacity:.34;filter:grayscale(1)}
+.scout-badge--used{opacity:.34;filter:grayscale(1)}.scout-badge--used .scout-badge__count-glow{display:none}
 .phone--scout-available .scout-badge{animation:scout-dock .72s .2s cubic-bezier(.16,1,.3,1) both}.phone--scout-active .scout-badge{animation:scout-spent .5s cubic-bezier(.2,.8,.2,1) both}.phone--scout-expired .lock-mark{animation:lock-return .55s cubic-bezier(.16,1,.3,1) both}
 .entered-label{position:absolute;z-index:2;left:0;bottom:105px;width:100%;text-align:center;color:rgba(255,255,255,.25);font-size:8px}
 .round-restart-button{position:absolute;z-index:4;top:690px;left:89px;width:224px;height:44px;border:1px solid rgba(157,202,84,.32);border-radius:13px;background:rgba(17,23,13,.9);color:#bfe681;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer;box-shadow:0 0 28px rgba(157,202,84,.08)}.round-restart-button:hover{border-color:rgba(157,202,84,.7);background:rgba(28,40,20,.95)}.round-restart-button:focus-visible{outline:3px solid rgba(157,202,84,.46);outline-offset:3px}
