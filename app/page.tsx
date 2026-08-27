@@ -103,7 +103,7 @@ function ExactNothingBall({ className = '' }: { className?: string }) {
 }
 
 function LockMark() {
-  return <img className="lock-mark" src="/assets/figma/match/lock.svg" width="15" height="15" alt="Locked" />;
+  return <img className="lock-mark" src="/assets/figma/match/lock.svg" width="14" height="15" alt="Locked" />;
 }
 
 function CrownMark() {
@@ -426,6 +426,7 @@ function InteractiveTrial() {
   const [roundEndsAt, setRoundEndsAt] = useState<number | null>(null);
   const [roundSecondsRemaining, setRoundSecondsRemaining] = useState(ROUND_DURATION_SECONDS);
   const [resolving, setResolving] = useState(false);
+  const [resultTransitioning, setResultTransitioning] = useState(false);
   const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
@@ -467,10 +468,17 @@ function InteractiveTrial() {
     if (!resolving || selectedBall === null || winningBall === null || phase !== 'pick') return;
     const revealTimer = window.setTimeout(() => {
       setResolving(false);
+      setResultTransitioning(true);
       setPhase('result');
-    }, 460);
+    }, 420);
     return () => window.clearTimeout(revealTimer);
   }, [phase, resolving, selectedBall, winningBall]);
+
+  useEffect(() => {
+    if (!resultTransitioning) return;
+    const transitionTimer = window.setTimeout(() => setResultTransitioning(false), 780);
+    return () => window.clearTimeout(transitionTimer);
+  }, [resultTransitioning]);
 
   const wonScout = selectedBall !== null && selectedBall === winningBall;
 
@@ -484,6 +492,7 @@ function InteractiveTrial() {
     setRoundEndsAt(null);
     setRoundSecondsRemaining(ROUND_DURATION_SECONDS);
     setResolving(false);
+    setResultTransitioning(false);
   }
 
   function pickBall(index: number) {
@@ -496,6 +505,7 @@ function InteractiveTrial() {
     setScoutState(wonScout ? 'available' : 'unavailable');
     setRoundSecondsRemaining(ROUND_DURATION_SECONDS);
     setRoundEndsAt(Date.now() + ROUND_DURATION_SECONDS * 1000);
+    setResultTransitioning(false);
     setPhase('match');
   }
 
@@ -543,20 +553,30 @@ function InteractiveTrial() {
           </div>
         </div>
         <div className="trial-stage">
-          <div className={`trial-screen trial-screen--${phase}`} key={phase}>
-            {phase === 'pick' && <PickBallScreen onPick={pickBall} selectedBall={selectedBall} resolving={resolving} />}
-            {phase === 'result' && <ResultScreen result={wonScout ? 'scout' : 'nothing'} onStart={startMatch} />}
+          <div className={`trial-screen trial-screen--${phase}`}>
+            {(phase === 'pick' || resultTransitioning) && (
+              <div className={`trial-phase-layer trial-phase-layer--pick${resultTransitioning ? ' is-exiting' : ''}`}>
+                <PickBallScreen onPick={pickBall} selectedBall={selectedBall} resolving={resolving || resultTransitioning} />
+              </div>
+            )}
+            {phase === 'result' && (
+              <div className={`trial-phase-layer trial-phase-layer--result${resultTransitioning ? ' is-entering' : ''}`}>
+                <ResultScreen result={wonScout ? 'scout' : 'nothing'} onStart={startMatch} />
+              </div>
+            )}
             {phase === 'match' && (
-              <MatchScreen
-                scoutState={scoutState}
-                secondsRemaining={secondsRemaining}
-                expiresAt={expiresAt}
-                roundSecondsRemaining={roundSecondsRemaining}
-                onScoutTap={openScoutConfirmation}
-                onConfirmScout={activateScout}
-                onCancelScout={cancelScout}
-                onNewRound={resetRound}
-              />
+              <div className="trial-phase-layer trial-phase-layer--match">
+                <MatchScreen
+                  scoutState={scoutState}
+                  secondsRemaining={secondsRemaining}
+                  expiresAt={expiresAt}
+                  roundSecondsRemaining={roundSecondsRemaining}
+                  onScoutTap={openScoutConfirmation}
+                  onConfirmScout={activateScout}
+                  onCancelScout={cancelScout}
+                  onNewRound={resetRound}
+                />
+              </div>
             )}
           </div>
           <span className="sr-only" aria-live="polite">{status}</span>
