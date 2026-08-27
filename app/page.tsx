@@ -723,59 +723,82 @@ function InteractiveTrial() {
   ) : undefined;
 
   return (
-    <section className="trial-section" aria-labelledby="trial-heading">
-      <div className="section-heading trial-heading-row">
-        <div><p className="kicker">PLAYABLE TRIAL</p><h2 id="trial-heading">Pick-a-Ball Scout mechanic</h2></div>
-        <p>Random draw · One-use Scout · Exact 60-second reveal</p>
-      </div>
-      <div className="trial-shell">
-        <div className="trial-stage">
-          <div className={`trial-screen trial-screen--${phase}`}>
-            {(phase === 'pick' || resultTransitioning) && (
-              <div className={`trial-phase-layer trial-phase-layer--pick${resultTransitioning ? ' is-exiting' : ''}`}>
-                <PickBallScreen
-                  onPick={pickBall}
-                  selectedBall={selectedBall}
-                  resolving={resolving || resultTransitioning}
-                  mobileMode
-                  onOpenGuide={phase === 'pick' ? () => setShowRules(true) : undefined}
-                  guideOverlay={phase === 'pick' ? guideOverlay : undefined}
-                />
-              </div>
-            )}
-            {phase === 'result' && (
-              <div className={`trial-phase-layer trial-phase-layer--result${resultTransitioning ? ' is-entering' : ''}`}>
-                <ResultScreen
-                  result={wonScout ? 'scout' : 'nothing'}
-                  onStart={startMatch}
-                  mobileMode
-                  onOpenGuide={() => setShowRules(true)}
-                  guideOverlay={guideOverlay}
-                />
-              </div>
-            )}
-            {phase === 'match' && (
-              <div className="trial-phase-layer trial-phase-layer--match">
-                <MatchScreen
-                  scoutState={scoutState}
-                  secondsRemaining={secondsRemaining}
-                  expiresAt={expiresAt}
-                  roundSecondsRemaining={roundSecondsRemaining}
-                  onScoutTap={openScoutConfirmation}
-                  onConfirmScout={activateScout}
-                  onCancelScout={cancelScout}
-                  onNewRound={resetRound}
-                  mobileMode
-                  onOpenGuide={() => setShowRules(true)}
-                  guideOverlay={guideOverlay}
-                />
-              </div>
-            )}
+    <div className="standalone-trial" aria-label="Pick-a-Ball Scout game">
+      <div className={`trial-screen trial-screen--${phase}`}>
+        {(phase === 'pick' || resultTransitioning) && (
+          <div className={`trial-phase-layer trial-phase-layer--pick${resultTransitioning ? ' is-exiting' : ''}`}>
+            <PickBallScreen
+              onPick={pickBall}
+              selectedBall={selectedBall}
+              resolving={resolving || resultTransitioning}
+              mobileMode
+              onOpenGuide={phase === 'pick' ? () => setShowRules(true) : undefined}
+              guideOverlay={phase === 'pick' ? guideOverlay : undefined}
+            />
           </div>
-          <span className="sr-only" aria-live="polite">{status}</span>
+        )}
+        {phase === 'result' && (
+          <div className={`trial-phase-layer trial-phase-layer--result${resultTransitioning ? ' is-entering' : ''}`}>
+            <ResultScreen
+              result={wonScout ? 'scout' : 'nothing'}
+              onStart={startMatch}
+              mobileMode
+              onOpenGuide={() => setShowRules(true)}
+              guideOverlay={guideOverlay}
+            />
+          </div>
+        )}
+        {phase === 'match' && (
+          <div className="trial-phase-layer trial-phase-layer--match">
+            <MatchScreen
+              scoutState={scoutState}
+              secondsRemaining={secondsRemaining}
+              expiresAt={expiresAt}
+              roundSecondsRemaining={roundSecondsRemaining}
+              onScoutTap={openScoutConfirmation}
+              onConfirmScout={activateScout}
+              onCancelScout={cancelScout}
+              onNewRound={resetRound}
+              mobileMode
+              onOpenGuide={() => setShowRules(true)}
+              guideOverlay={guideOverlay}
+            />
+          </div>
+        )}
+      </div>
+      <span className="sr-only" aria-live="polite">{status}</span>
+    </div>
+  );
+}
+
+function StandaloneGame() {
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    function fitGameToViewport() {
+      const viewport = window.visualViewport;
+      const width = viewport?.width ?? window.innerWidth;
+      const height = viewport?.height ?? window.innerHeight;
+      setScale(Math.min(width / 402, height / 874, 1));
+    }
+
+    fitGameToViewport();
+    window.addEventListener('resize', fitGameToViewport);
+    window.visualViewport?.addEventListener('resize', fitGameToViewport);
+    return () => {
+      window.removeEventListener('resize', fitGameToViewport);
+      window.visualViewport?.removeEventListener('resize', fitGameToViewport);
+    };
+  }, []);
+
+  return (
+    <main className="standalone-root">
+      <div className="standalone-fit" style={{ width: 402 * scale, height: 874 * scale }}>
+        <div className="standalone-canvas" style={{ transform: `scale(${scale})` }}>
+          <InteractiveTrial />
         </div>
       </div>
-    </section>
+    </main>
   );
 }
 
@@ -1068,35 +1091,5 @@ function AssetAudit() {
 }
 
 export default function Home() {
-  return (
-    <main>
-      <header className="document-header">
-        <div>
-          <p className="kicker">VYRALNET · SCOUT TRIAL</p>
-          <h1>Pick a Ball visual system</h1>
-          <p className="lede">A complete standalone Scout trial: random three-ball selection, Scout or Nothing result, match handoff, one-use confirmation, timed score reveal, and automatic re-lock.</p>
-        </div>
-        <div className="document-status"><span className="status-dot" /> Working interactive trial</div>
-      </header>
-
-      <nav className="scope-card" aria-label="Document sections">
-        <div><span>01</span><p>Pick a Ball screens</p></div>
-        <div><span>02</span><p>Reusable game elements</p></div>
-        <div><span>03</span><p>Figma source audit</p></div>
-      </nav>
-
-      <InteractiveTrial />
-
-      <Comparison number="SCREEN 01" title="Power Ball selection" nodeId="9-1080" specs={['402 × 874', 'SF Pro', 'Three 108px ball groups']}><PickBallScreen /></Comparison>
-      <Comparison number="SCREEN 02" title="Scout awarded" nodeId="9-1298" specs={['Scout core', 'Burst rings', 'Primary CTA']}><ResultScreen result="scout" /></Comparison>
-      <Comparison number="SCREEN 03" title="Nothing awarded" nodeId="9-1363" specs={['Dark ball', 'Failure copy', 'Muted CTA']}><ResultScreen result="nothing" /></Comparison>
-      <Comparison number="ELEMENTS 01" title="Pick a Ball component board" nodeId="9-1080" specs={['Mystery ball', 'Nothing ball', 'Scout core', 'Burst rings', 'Type', 'Buttons']} asset><AssetBoard /></Comparison>
-      <AssetAudit />
-
-      <footer>
-        <p>COMPLETE STANDALONE FLOW</p>
-        <h2>Pick, reveal, spend Scout, count down, and lock the score again.</h2>
-      </footer>
-    </main>
-  );
+  return <StandaloneGame />;
 }

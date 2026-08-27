@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vyralnet Scout · Visual Comparison',
-  description: 'Side-by-side Figma and coded reconstruction of the Vyralnet Scout trial elements.',
+  title: 'Vyralnet · Pick-a-Ball Scout',
+  description: 'A standalone Pick-a-Ball Scout game trial.',
 };
 
 export default function RootLayout({
