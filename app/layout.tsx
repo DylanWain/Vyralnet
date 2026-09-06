@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vyralnet · Pick-a-Ball Scout',
-  description: 'A standalone Pick-a-Ball Scout game trial.',
+  title: 'Vyralnet',
+  description: 'Compete. Win. Get hired.',
 };
 
 export default function RootLayout({

@@ -758,12 +758,144 @@ function InteractiveTrial() {
   );
 }
 
+function WelcomeHorizon() {
+  return (
+    <svg className="welcome-horizon" viewBox="0 0 510 220" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="welcome-core" x1="0" y1="0" x2="510" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#9CC665" />
+          <stop offset="3.57%" stopColor="#A4CF6E" />
+          <stop offset="7.14%" stopColor="#BBDD7E" />
+          <stop offset="10.71%" stopColor="#D3EE99" />
+          <stop offset="14.29%" stopColor="#D1EB9A" />
+          <stop offset="17.86%" stopColor="#EEFAC2" />
+          <stop offset="21.43%" stopColor="#F6FCDA" />
+          <stop offset="25%" stopColor="#E8F6CA" />
+          <stop offset="28.57%" stopColor="#E5F1C6" />
+          <stop offset="32.14%" stopColor="#EFEDE6" />
+          <stop offset="35.71%" stopColor="#EDE7E9" />
+          <stop offset="39.29%" stopColor="#F4E4FA" />
+          <stop offset="42.86%" stopColor="#F7E4FC" />
+          <stop offset="46.43%" stopColor="#F4D4FA" />
+          <stop offset="50%" stopColor="#F9E4FB" />
+          <stop offset="53.57%" stopColor="#F6D6FA" />
+          <stop offset="57.14%" stopColor="#F8DDF9" />
+          <stop offset="60.71%" stopColor="#F8D9EA" />
+          <stop offset="64.29%" stopColor="#FBEDE9" />
+          <stop offset="67.86%" stopColor="#F9E4D2" />
+          <stop offset="71.43%" stopColor="#F9E8D1" />
+          <stop offset="75%" stopColor="#FAE9CF" />
+          <stop offset="78.57%" stopColor="#FCF7DB" />
+          <stop offset="82.14%" stopColor="#FCF2BE" />
+          <stop offset="85.71%" stopColor="#FBEFAF" />
+          <stop offset="89.29%" stopColor="#F9E794" />
+          <stop offset="92.86%" stopColor="#F8E788" />
+          <stop offset="96.43%" stopColor="#EED75C" />
+          <stop offset="100%" stopColor="#E1BD50" />
+        </linearGradient>
+        <linearGradient id="welcome-rim" x1="0" y1="0" x2="510" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#53703E" />
+          <stop offset="3.57%" stopColor="#64824A" />
+          <stop offset="7.14%" stopColor="#769A56" />
+          <stop offset="10.71%" stopColor="#82A45F" />
+          <stop offset="14.29%" stopColor="#86A962" />
+          <stop offset="17.86%" stopColor="#96BA71" />
+          <stop offset="21.43%" stopColor="#A6C67F" />
+          <stop offset="25%" stopColor="#B5CD8F" />
+          <stop offset="28.57%" stopColor="#B8CC9A" />
+          <stop offset="32.14%" stopColor="#B8BCA3" />
+          <stop offset="35.71%" stopColor="#B9ABB7" />
+          <stop offset="39.29%" stopColor="#B793C6" />
+          <stop offset="42.86%" stopColor="#C694E1" />
+          <stop offset="46.43%" stopColor="#D692F0" />
+          <stop offset="50%" stopColor="#E494F4" />
+          <stop offset="53.57%" stopColor="#EC9EF1" />
+          <stop offset="57.14%" stopColor="#ECA4DF" />
+          <stop offset="60.71%" stopColor="#EEA6C3" />
+          <stop offset="64.29%" stopColor="#EFAAA2" />
+          <stop offset="67.86%" stopColor="#E8A587" />
+          <stop offset="71.43%" stopColor="#E9AA7C" />
+          <stop offset="75%" stopColor="#ECAE72" />
+          <stop offset="78.57%" stopColor="#EBAD62" />
+          <stop offset="82.14%" stopColor="#EAB15B" />
+          <stop offset="85.71%" stopColor="#E4AE55" />
+          <stop offset="89.29%" stopColor="#E5B358" />
+          <stop offset="92.86%" stopColor="#C69444" />
+          <stop offset="96.43%" stopColor="#A47C37" />
+          <stop offset="100%" stopColor="#8D6A2F" />
+        </linearGradient>
+        <filter id="welcome-tight-upper-blur" x="-12%" y="-40%" width="124%" height="180%" colorInterpolationFilters="sRGB">
+          <feGaussianBlur stdDeviation="2.25" />
+        </filter>
+        <filter id="welcome-lower-falloff-blur" x="-12%" y="-40%" width="124%" height="180%" colorInterpolationFilters="sRGB">
+          <feGaussianBlur stdDeviation="3.4" />
+        </filter>
+        <filter id="welcome-medium-bloom-blur" x="-16%" y="-55%" width="132%" height="210%" colorInterpolationFilters="sRGB">
+          <feGaussianBlur stdDeviation="8.6" />
+        </filter>
+        <filter id="welcome-atmosphere-blur" x="-24%" y="-95%" width="148%" height="290%" colorInterpolationFilters="sRGB">
+          <feGaussianBlur stdDeviation="23" />
+        </filter>
+        <filter id="welcome-streak-blur" x="-12%" y="-30%" width="124%" height="160%" colorInterpolationFilters="sRGB">
+          <feGaussianBlur stdDeviation="0.75" />
+        </filter>
+      </defs>
+      <g className="welcome-horizon__energy">
+        <path className="welcome-horizon__atmosphere" d="M0 149.858 C170 55.635 340 58.874 510 150.905" fill="none" stroke="url(#welcome-rim)" strokeWidth="58" filter="url(#welcome-atmosphere-blur)" transform="translate(0 -9)" />
+        <path className="welcome-horizon__medium-bloom" d="M0 149.858 C170 55.635 340 58.874 510 150.905" fill="none" stroke="url(#welcome-rim)" strokeWidth="22" filter="url(#welcome-medium-bloom-blur)" transform="translate(0 -4.2)" />
+        <path className="welcome-horizon__lower-falloff" d="M0 149.858 C170 55.635 340 58.874 510 150.905" fill="none" stroke="url(#welcome-rim)" strokeWidth="6" filter="url(#welcome-lower-falloff-blur)" transform="translate(0 2.6)" />
+        <path className="welcome-horizon__tight-upper" d="M0 149.858 C170 55.635 340 58.874 510 150.905" fill="none" stroke="url(#welcome-rim)" strokeWidth="7.5" filter="url(#welcome-tight-upper-blur)" transform="translate(0 -1.8)" />
+        <path className="welcome-horizon__streak welcome-horizon__streak--one" d="M0 149.858 C170 55.635 340 58.874 510 150.905" pathLength="100" fill="none" stroke="url(#welcome-core)" strokeWidth="1.25" strokeDasharray="12 2.2 5.5 3.1 17 1.8 8.5 2.7 20 3.2 9 15" filter="url(#welcome-streak-blur)" transform="translate(0 -4.6)" />
+        <path className="welcome-horizon__streak welcome-horizon__streak--two" d="M0 149.858 C170 55.635 340 58.874 510 150.905" pathLength="100" fill="none" stroke="url(#welcome-rim)" strokeWidth="0.9" strokeDasharray="6 4.3 15 2.4 7.2 5.1 22 2.8 11 4.2 8 12" filter="url(#welcome-streak-blur)" transform="translate(0 -8.2)" />
+        <path className="welcome-horizon__streak welcome-horizon__streak--three" d="M0 149.858 C170 55.635 340 58.874 510 150.905" pathLength="100" fill="none" stroke="url(#welcome-rim)" strokeWidth="0.7" strokeDasharray="9 6.5 19 3.2 6 7 13 4 18 5 5 4" filter="url(#welcome-streak-blur)" transform="translate(0 5.4)" />
+        <path className="welcome-horizon__rim" d="M0 149.858 C170 55.635 340 58.874 510 150.905" fill="none" stroke="url(#welcome-rim)" strokeWidth="1.3" />
+        <path className="welcome-horizon__core" d="M0 149.858 C170 55.635 340 58.874 510 150.905" fill="none" stroke="url(#welcome-core)" strokeWidth="0.46" />
+        <path className="welcome-horizon__micro-rim" d="M0 149.858 C170 55.635 340 58.874 510 150.905" pathLength="100" fill="none" stroke="url(#welcome-core)" strokeWidth="0.26" strokeDasharray="8.6 0.9 13.2 1.3 5.4 0.7 17.1 1.1 10.4 0.8 19.2 1.5" />
+      </g>
+    </svg>
+  );
+}
+
+function HorizonCalibration() {
+  return (
+    <main className="horizon-calibration" aria-label="Vyralnet horizon calibration">
+      <WelcomeHorizon />
+    </main>
+  );
+}
+
 function StandaloneGame() {
+  const [started, setStarted] = useState(false);
+  const [leavingWelcome, setLeavingWelcome] = useState(false);
+
+  const startExperience = useCallback(() => {
+    if (leavingWelcome) return;
+    setLeavingWelcome(true);
+    window.setTimeout(() => setStarted(true), 460);
+  }, [leavingWelcome]);
+
   return (
     <main className="standalone-root standalone-root--phone">
       <div className="standalone-fit">
         <div className="standalone-canvas">
-          <InteractiveTrial />
+          {started ? (
+            <div className="welcome-game-enter">
+              <InteractiveTrial />
+            </div>
+          ) : (
+            <section className={`welcome-screen${leavingWelcome ? ' is-leaving' : ''}`} aria-label="Welcome to Vyralnet">
+              <div className="welcome-copy">
+                <p>Welcome to</p>
+                <h1>Vyralnet</h1>
+                <span>Compete. Win. Get hired.</span>
+              </div>
+              <WelcomeHorizon />
+              <button className="welcome-start" type="button" onClick={startExperience}>
+                <span>Get Started</span>
+                <span className="welcome-start__arrow" aria-hidden="true">→</span>
+              </button>
+            </section>
+          )}
         </div>
       </div>
     </main>
