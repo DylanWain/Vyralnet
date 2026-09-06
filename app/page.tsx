@@ -889,6 +889,7 @@ function WelcomeHorizon() {
       uniform sampler2D uReference;
       uniform float uTime;
       uniform float uMotion;
+      uniform vec2 uResolution;
       out vec4 outColor;
 
       vec3 colorRing(float position) {
@@ -920,7 +921,19 @@ function WelcomeHorizon() {
       }
 
       void main() {
-        vec4 reference = texture(uReference, vUv);
+        // The canvas covers the whole screen so Safari has no internal layer
+        // edge to composite. Recreate the original 509 x 220 horizon band at
+        // its reference position inside that full-screen surface.
+        float screenY = 1.0 - vUv.y;
+        float bandHeight = (uResolution.x / uResolution.y) * (220.0 / 509.0);
+        float bandY = (screenY - 0.4143) / bandHeight;
+        if (bandY < 0.0 || bandY > 1.0) {
+          outColor = vec4(0.0, 0.0, 0.0, 1.0);
+          return;
+        }
+
+        vec2 referenceUv = vec2(vUv.x, 1.0 - bandY);
+        vec4 reference = texture(uReference, referenceUv);
         float light = max(reference.r, max(reference.g, reference.b));
         float lightMask = smoothstep(0.006, 0.34, light);
 
@@ -956,8 +969,8 @@ function WelcomeHorizon() {
         // of bright, unpremultiplied WebGL pixels.
         vec3 illuminated = max(movingPixels * energyGain - vec3(0.008), vec3(0.0));
         float verticalFeather =
-          smoothstep(0.0, 0.15, vUv.y) *
-          smoothstep(0.0, 0.15, 1.0 - vUv.y);
+          smoothstep(0.0, 0.15, bandY) *
+          smoothstep(0.0, 0.15, 1.0 - bandY);
         illuminated *= verticalFeather;
         outColor = vec4(clamp(illuminated, 0.0, 1.0), 1.0);
       }
@@ -997,6 +1010,7 @@ function WelcomeHorizon() {
       const positionLocation = gl.getAttribLocation(program, 'aPosition');
       const timeLocation = gl.getUniformLocation(program, 'uTime');
       const motionLocation = gl.getUniformLocation(program, 'uMotion');
+      const resolutionLocation = gl.getUniformLocation(program, 'uResolution');
       const textureLocation = gl.getUniformLocation(program, 'uReference');
       const positionBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -1047,6 +1061,7 @@ function WelcomeHorizon() {
         gl.uniform1i(textureLocation, 0);
         gl.uniform1f(timeLocation, elapsed);
         gl.uniform1f(motionLocation, reducedMotion.matches ? 0 : 1);
+        gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         frame = window.requestAnimationFrame(render);
       };
@@ -1086,7 +1101,6 @@ function WelcomeHorizon() {
 
   return (
     <span className={`welcome-horizon welcome-horizon--webgl${ready ? ' is-ready' : ''}`} aria-hidden="true">
-      <img className="welcome-horizon__fallback" src="/assets/welcome/horizon-reference.png" alt="" />
       <canvas ref={canvasRef} className="welcome-horizon__canvas" />
     </span>
   );
