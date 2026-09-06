@@ -865,10 +865,9 @@ function WelcomeHorizon() {
     if (!canvas) return;
 
     const gl = canvas.getContext('webgl2', {
-      alpha: true,
+      alpha: false,
       antialias: false,
       depth: false,
-      premultipliedAlpha: false,
       preserveDrawingBuffer: false,
     });
     if (!gl) return;
@@ -951,22 +950,16 @@ function WelcomeHorizon() {
           travelingEnergy * 0.16 + fineShimmer * 0.025 + slowPulse * 0.018
         );
 
-        // Remove the screenshot's near-black RGB floor, then encode the
-        // remaining light as transparent, unpremultiplied color. Compositing
-        // over the page's true black recreates the illuminated pixels without
-        // exposing the rectangular canvas.
+        // Remove the screenshot's near-black RGB floor and fade the sampled
+        // atmosphere to exact black before it reaches either canvas edge.
+        // Keeping the canvas opaque avoids iOS Safari's inconsistent handling
+        // of bright, unpremultiplied WebGL pixels.
         vec3 illuminated = max(movingPixels * energyGain - vec3(0.008), vec3(0.0));
         float verticalFeather =
           smoothstep(0.0, 0.15, vUv.y) *
           smoothstep(0.0, 0.15, 1.0 - vUv.y);
         illuminated *= verticalFeather;
-
-        float alpha = clamp(max(illuminated.r, max(illuminated.g, illuminated.b)), 0.0, 1.0);
-        if (alpha < 0.001) {
-          outColor = vec4(0.0);
-        } else {
-          outColor = vec4(clamp(illuminated / alpha, 0.0, 1.0), alpha);
-        }
+        outColor = vec4(clamp(illuminated, 0.0, 1.0), 1.0);
       }
     `;
 
@@ -1043,7 +1036,7 @@ function WelcomeHorizon() {
         elapsed += Math.min((now - previousFrame) / 1000, 0.05);
         previousFrame = now;
         resize();
-        gl.clearColor(0, 0, 0, 0);
+        gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.useProgram(program);
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
