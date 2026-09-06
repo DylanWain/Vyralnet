@@ -758,7 +758,7 @@ function InteractiveTrial() {
   );
 }
 
-function WelcomeHorizon() {
+function LegacyWelcomeHorizon() {
   return (
     <svg className="welcome-horizon" viewBox="0 0 510 220" preserveAspectRatio="none" aria-hidden="true">
       <defs>
@@ -853,6 +853,232 @@ function WelcomeHorizon() {
         <path className="welcome-horizon__micro-rim" d="M0 149.858 C170 55.635 340 58.874 510 150.905" pathLength="100" fill="none" stroke="url(#welcome-core)" strokeWidth="0.26" strokeDasharray="8.6 0.9 13.2 1.3 5.4 0.7 17.1 1.1 10.4 0.8 19.2 1.5" />
       </g>
     </svg>
+  );
+}
+
+function WelcomeHorizon() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const gl = canvas.getContext('webgl2', {
+      alpha: true,
+      antialias: false,
+      depth: false,
+      premultipliedAlpha: false,
+      preserveDrawingBuffer: false,
+    });
+    if (!gl) return;
+
+    const vertexSource = `#version 300 es
+      in vec2 aPosition;
+      out vec2 vUv;
+
+      void main() {
+        vUv = aPosition * 0.5 + 0.5;
+        gl_Position = vec4(aPosition, 0.0, 1.0);
+      }
+    `;
+
+    const fragmentSource = `#version 300 es
+      precision highp float;
+
+      in vec2 vUv;
+      uniform sampler2D uReference;
+      uniform float uTime;
+      uniform float uMotion;
+      out vec4 outColor;
+
+      vec3 colorRing(float position) {
+        float u = fract(position);
+        vec3 greenDeep = vec3(0.333, 0.486, 0.208);
+        vec3 green = vec3(0.553, 0.776, 0.247);
+        vec3 greenPale = vec3(0.784, 0.886, 0.620);
+        vec3 lavender = vec3(0.729, 0.553, 0.694);
+        vec3 purple = vec3(0.843, 0.506, 0.835);
+        vec3 pink = vec3(0.929, 0.561, 0.690);
+        vec3 orange = vec3(0.969, 0.639, 0.369);
+        vec3 gold = vec3(0.988, 0.765, 0.322);
+        vec3 amber = vec3(0.902, 0.725, 0.310);
+
+        if (u < 0.12) return mix(greenDeep, green, smoothstep(0.0, 0.12, u));
+        if (u < 0.27) return mix(green, greenPale, smoothstep(0.12, 0.27, u));
+        if (u < 0.39) return mix(greenPale, lavender, smoothstep(0.27, 0.39, u));
+        if (u < 0.47) return mix(lavender, purple, smoothstep(0.39, 0.47, u));
+        if (u < 0.56) return mix(purple, pink, smoothstep(0.47, 0.56, u));
+        if (u < 0.64) return mix(pink, orange, smoothstep(0.56, 0.64, u));
+        if (u < 0.72) return mix(orange, gold, smoothstep(0.64, 0.72, u));
+        if (u < 0.84) return mix(gold, amber, smoothstep(0.72, 0.84, u));
+        return mix(amber, greenDeep, smoothstep(0.84, 1.0, u));
+      }
+
+      float circularDistance(float a, float b) {
+        float direct = abs(a - b);
+        return min(direct, 1.0 - direct);
+      }
+
+      void main() {
+        vec4 reference = texture(uReference, vUv);
+        float light = max(reference.r, max(reference.g, reference.b));
+        float lightMask = smoothstep(0.006, 0.34, light);
+
+        // The visible horizon occupies 60% of a complete color ring. The
+        // remaining gold-to-green transition continues below the viewport.
+        float ringPosition = fract(0.12 + vUv.x * 0.60);
+        float phase = uMotion * (uTime / 14.0 + 0.004 * sin(uTime * 0.58));
+        vec3 originalColor = colorRing(ringPosition);
+        vec3 movingColor = colorRing(fract(ringPosition - phase));
+        vec3 colorRatio = clamp(
+          (movingColor + vec3(0.08)) / (originalColor + vec3(0.08)),
+          vec3(0.28),
+          vec3(3.1)
+        );
+
+        vec3 movingPixels = reference.rgb * mix(vec3(1.0), colorRatio, lightMask);
+
+        float movingCenter = fract(0.18 + phase);
+        float energyDistance = circularDistance(ringPosition, movingCenter);
+        float travelingEnergy = exp(-energyDistance * energyDistance / 0.0028);
+        float fineShimmer =
+          sin((ringPosition - phase) * 132.0 + uTime * 7.1) *
+          sin((ringPosition - phase * 0.73) * 61.0 - uTime * 4.3);
+        float slowPulse = 0.5 + 0.5 * sin(uTime * 1.05 + ringPosition * 18.0);
+        float startup = min(1.0, uTime * 2.4) * uMotion;
+        float energyGain = 1.0 + startup * lightMask * (
+          travelingEnergy * 0.16 + fineShimmer * 0.025 + slowPulse * 0.018
+        );
+
+        outColor = vec4(movingPixels * energyGain, reference.a);
+      }
+    `;
+
+    const compileShader = (type: number, source: string) => {
+      const shader = gl.createShader(type);
+      if (!shader) throw new Error('Unable to create WebGL shader.');
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const message = gl.getShaderInfoLog(shader) ?? 'Unknown WebGL shader error.';
+        gl.deleteShader(shader);
+        throw new Error(message);
+      }
+      return shader;
+    };
+
+    let frame = 0;
+    let resizeObserver: ResizeObserver | undefined;
+    let disposed = false;
+
+    try {
+      const vertexShader = compileShader(gl.VERTEX_SHADER, vertexSource);
+      const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
+      const program = gl.createProgram();
+      if (!program) throw new Error('Unable to create WebGL program.');
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      gl.deleteShader(vertexShader);
+      gl.deleteShader(fragmentShader);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        throw new Error(gl.getProgramInfoLog(program) ?? 'Unable to link WebGL program.');
+      }
+
+      const positionLocation = gl.getAttribLocation(program, 'aPosition');
+      const timeLocation = gl.getUniformLocation(program, 'uTime');
+      const motionLocation = gl.getUniformLocation(program, 'uMotion');
+      const textureLocation = gl.getUniformLocation(program, 'uReference');
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+        gl.STATIC_DRAW,
+      );
+
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const startedAt = performance.now();
+      let elapsed = 0;
+      let previousFrame = startedAt;
+
+      const resize = () => {
+        const bounds = canvas.getBoundingClientRect();
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        const width = Math.max(1, Math.round(bounds.width * pixelRatio));
+        const height = Math.max(1, Math.round(bounds.height * pixelRatio));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        gl.viewport(0, 0, width, height);
+      };
+
+      const render = (now: number) => {
+        if (disposed) return;
+        elapsed += Math.min((now - previousFrame) / 1000, 0.05);
+        previousFrame = now;
+        resize();
+        gl.useProgram(program);
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(textureLocation, 0);
+        gl.uniform1f(timeLocation, elapsed);
+        gl.uniform1f(motionLocation, reducedMotion.matches ? 0 : 1);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        frame = window.requestAnimationFrame(render);
+      };
+
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => {
+        if (disposed) return;
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        resize();
+        setReady(true);
+        frame = window.requestAnimationFrame(render);
+      };
+      image.src = '/assets/welcome/horizon-reference.png';
+
+      resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(canvas);
+
+      return () => {
+        disposed = true;
+        window.cancelAnimationFrame(frame);
+        resizeObserver?.disconnect();
+        gl.deleteBuffer(positionBuffer);
+        gl.deleteTexture(texture);
+        gl.deleteProgram(program);
+      };
+    } catch (error) {
+      console.error('Vyralnet horizon renderer could not start.', error);
+      return () => {
+        disposed = true;
+        window.cancelAnimationFrame(frame);
+        resizeObserver?.disconnect();
+      };
+    }
+  }, []);
+
+  return (
+    <span className={`welcome-horizon welcome-horizon--webgl${ready ? ' is-ready' : ''}`} aria-hidden="true">
+      <img className="welcome-horizon__fallback" src="/assets/welcome/horizon-reference.png" alt="" />
+      <canvas ref={canvasRef} className="welcome-horizon__canvas" />
+    </span>
   );
 }
 
