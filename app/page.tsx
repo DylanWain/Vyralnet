@@ -928,12 +928,49 @@ function WelcomeHorizon() {
         float bandHeight = (uResolution.x / uResolution.y) * (220.0 / 509.0);
         float bandY = (screenY - 0.4143) / bandHeight;
 
-        // Outside the source bounds, sample the nearest edge row and let that
-        // row decay over the full screen. This keeps the black level and faint
-        // color cast continuous at both former crop edges.
+        // Start with the untouched source pixels at their original position.
         float sampledBandY = clamp(bandY, 0.0, 1.0);
         vec2 referenceUv = vec2(vUv.x, 1.0 - sampledBandY);
         vec4 reference = texture(uReference, referenceUv);
+
+        // Measure the existing blur slope from several rows near each edge.
+        // Continue that slope beyond the crop, and overlap it slightly with
+        // the source. This avoids both a value jump and the derivative "kink"
+        // that OLED screens reveal as a horizontal line.
+        vec3 topEdge = texture(uReference, vec2(vUv.x, 1.0)).rgb;
+        vec3 topInner = (
+          texture(uReference, vec2(vUv.x, 0.97)).rgb +
+          texture(uReference, vec2(vUv.x, 0.94)).rgb +
+          texture(uReference, vec2(vUv.x, 0.91)).rgb
+        ) / 3.0;
+        float topEdgeLight = max(topEdge.r, max(topEdge.g, topEdge.b));
+        float topInnerLight = max(topInner.r, max(topInner.g, topInner.b));
+        float topRate = clamp(
+          log(max(topInnerLight, topEdgeLight * 1.03) / max(topEdgeLight, 0.001)) / 0.06,
+          1.4,
+          8.0
+        );
+        vec3 topContinuation = topEdge * exp(topRate * bandY);
+        float topOverlap = 1.0 - smoothstep(0.0, 0.12, bandY);
+        reference.rgb = mix(reference.rgb, topContinuation, topOverlap);
+
+        vec3 bottomEdge = texture(uReference, vec2(vUv.x, 0.0)).rgb;
+        vec3 bottomInner = (
+          texture(uReference, vec2(vUv.x, 0.03)).rgb +
+          texture(uReference, vec2(vUv.x, 0.06)).rgb +
+          texture(uReference, vec2(vUv.x, 0.09)).rgb
+        ) / 3.0;
+        float bottomEdgeLight = max(bottomEdge.r, max(bottomEdge.g, bottomEdge.b));
+        float bottomInnerLight = max(bottomInner.r, max(bottomInner.g, bottomInner.b));
+        float bottomRate = clamp(
+          log(max(bottomInnerLight, bottomEdgeLight * 1.03) / max(bottomEdgeLight, 0.001)) / 0.06,
+          1.4,
+          8.0
+        );
+        vec3 bottomContinuation = bottomEdge * exp(-bottomRate * (bandY - 1.0));
+        float bottomOverlap = smoothstep(0.88, 1.0, bandY);
+        reference.rgb = mix(reference.rgb, bottomContinuation, bottomOverlap);
+
         float light = max(reference.r, max(reference.g, reference.b));
         float lightMask = smoothstep(0.006, 0.34, light);
 
@@ -963,23 +1000,9 @@ function WelcomeHorizon() {
           travelingEnergy * 0.16 + fineShimmer * 0.025 + slowPulse * 0.018
         );
 
-        float distanceAbove = max(0.0, -bandY) * bandHeight;
-        float distanceBelow = max(0.0, bandY - 1.0) * bandHeight;
-        float outsideDistance = distanceAbove + distanceBelow;
-
-        // Vary the atmospheric reach gently by column so its disappearance is
-        // organic rather than another perfectly horizontal transition.
-        float reachVariation =
-          0.96 +
-          0.025 * sin(vUv.x * 13.7 + 0.8) +
-          0.015 * sin(vUv.x * 31.9 + 2.1);
-        float atmosphericReach = mix(0.086, 0.108, step(1.0, bandY)) * reachVariation;
-        float extensionFade = exp(-pow(outsideDistance / atmosphericReach, 1.65));
-
-        // Inside the original band this is the exact original animation.
-        // Outside it, only the matching near-black atmosphere continues and
-        // smoothly approaches true OLED black. The canvas remains opaque.
-        vec3 illuminated = movingPixels * energyGain * extensionFade;
+        // The canvas stays opaque, and the continued atmosphere asymptotically
+        // reaches true black without another internal cutoff point.
+        vec3 illuminated = movingPixels * energyGain;
         outColor = vec4(clamp(illuminated, 0.0, 1.0), 1.0);
       }
     `;
