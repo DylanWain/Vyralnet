@@ -856,7 +856,7 @@ function LegacyWelcomeHorizon() {
   );
 }
 
-function LegacyAnimatedWelcomeHorizon() {
+function WelcomeHorizon() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -971,13 +971,7 @@ function LegacyAnimatedWelcomeHorizon() {
         float verticalFeather =
           smoothstep(0.0, 0.15, bandY) *
           smoothstep(0.0, 0.15, 1.0 - bandY);
-        // The source crop contains a faint colored RGB floor (up to roughly
-        // 11/255) even where it appears black. OLED displays reveal that floor
-        // as a straight band, so retain only light that rises meaningfully
-        // above it. Because the mask follows local luminance, the atmosphere
-        // ends organically instead of along a shared horizontal row.
-        float haloSignal = smoothstep(0.05, 0.16, light);
-        illuminated *= verticalFeather * haloSignal;
+        illuminated *= verticalFeather;
         outColor = vec4(clamp(illuminated, 0.0, 1.0), 1.0);
       }
     `;
@@ -1108,25 +1102,6 @@ function LegacyAnimatedWelcomeHorizon() {
   return (
     <span className={`welcome-horizon welcome-horizon--webgl${ready ? ' is-ready' : ''}`} aria-hidden="true">
       <canvas ref={canvasRef} className="welcome-horizon__canvas" />
-    </span>
-  );
-}
-
-function WelcomeHorizon() {
-  return (
-    <span className="welcome-horizon welcome-horizon--video" aria-hidden="true">
-      <video
-        className="welcome-horizon__video"
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        poster="/assets/welcome/welcome-horizon-fullscreen.jpg"
-        disablePictureInPicture
-      >
-        <source src="/assets/welcome/welcome-horizon-fullscreen.mp4" type="video/mp4" />
-      </video>
     </span>
   );
 }
