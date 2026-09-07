@@ -921,18 +921,18 @@ function WelcomeHorizon() {
       }
 
       void main() {
-        // The canvas covers the whole screen so Safari has no internal layer
-        // edge to composite. Recreate the original 509 x 220 horizon band at
-        // its reference position inside that full-screen surface.
+        // The canvas covers the whole screen. The original horizon remains at
+        // its measured size and position, while its faint edge atmosphere is
+        // continued above and below instead of being cut off as a rectangle.
         float screenY = 1.0 - vUv.y;
         float bandHeight = (uResolution.x / uResolution.y) * (220.0 / 509.0);
         float bandY = (screenY - 0.4143) / bandHeight;
-        if (bandY < 0.0 || bandY > 1.0) {
-          outColor = vec4(0.0, 0.0, 0.0, 1.0);
-          return;
-        }
 
-        vec2 referenceUv = vec2(vUv.x, 1.0 - bandY);
+        // Outside the source bounds, sample the nearest edge row and let that
+        // row decay over the full screen. This keeps the black level and faint
+        // color cast continuous at both former crop edges.
+        float sampledBandY = clamp(bandY, 0.0, 1.0);
+        vec2 referenceUv = vec2(vUv.x, 1.0 - sampledBandY);
         vec4 reference = texture(uReference, referenceUv);
         float light = max(reference.r, max(reference.g, reference.b));
         float lightMask = smoothstep(0.006, 0.34, light);
@@ -963,15 +963,23 @@ function WelcomeHorizon() {
           travelingEnergy * 0.16 + fineShimmer * 0.025 + slowPulse * 0.018
         );
 
-        // Remove the screenshot's near-black RGB floor and fade the sampled
-        // atmosphere to exact black before it reaches either canvas edge.
-        // Keeping the canvas opaque avoids iOS Safari's inconsistent handling
-        // of bright, unpremultiplied WebGL pixels.
-        vec3 illuminated = max(movingPixels * energyGain - vec3(0.008), vec3(0.0));
-        float verticalFeather =
-          smoothstep(0.0, 0.15, bandY) *
-          smoothstep(0.0, 0.15, 1.0 - bandY);
-        illuminated *= verticalFeather;
+        float distanceAbove = max(0.0, -bandY) * bandHeight;
+        float distanceBelow = max(0.0, bandY - 1.0) * bandHeight;
+        float outsideDistance = distanceAbove + distanceBelow;
+
+        // Vary the atmospheric reach gently by column so its disappearance is
+        // organic rather than another perfectly horizontal transition.
+        float reachVariation =
+          0.96 +
+          0.025 * sin(vUv.x * 13.7 + 0.8) +
+          0.015 * sin(vUv.x * 31.9 + 2.1);
+        float atmosphericReach = mix(0.086, 0.108, step(1.0, bandY)) * reachVariation;
+        float extensionFade = exp(-pow(outsideDistance / atmosphericReach, 1.65));
+
+        // Inside the original band this is the exact original animation.
+        // Outside it, only the matching near-black atmosphere continues and
+        // smoothly approaches true OLED black. The canvas remains opaque.
+        vec3 illuminated = movingPixels * energyGain * extensionFade;
         outColor = vec4(clamp(illuminated, 0.0, 1.0), 1.0);
       }
     `;
