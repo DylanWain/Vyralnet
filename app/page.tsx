@@ -856,7 +856,7 @@ function LegacyWelcomeHorizon() {
   );
 }
 
-function WelcomeHorizon() {
+function LegacyAnimatedWelcomeHorizon() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -1108,6 +1108,25 @@ function WelcomeHorizon() {
   return (
     <span className={`welcome-horizon welcome-horizon--webgl${ready ? ' is-ready' : ''}`} aria-hidden="true">
       <canvas ref={canvasRef} className="welcome-horizon__canvas" />
+    </span>
+  );
+}
+
+function WelcomeHorizon() {
+  return (
+    <span className="welcome-horizon welcome-horizon--video" aria-hidden="true">
+      <video
+        className="welcome-horizon__video"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        poster="/assets/welcome/welcome-horizon-fullscreen.jpg"
+        disablePictureInPicture
+      >
+        <source src="/assets/welcome/welcome-horizon-fullscreen.mp4" type="video/mp4" />
+      </video>
     </span>
   );
 }
