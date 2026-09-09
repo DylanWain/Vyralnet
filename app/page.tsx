@@ -1146,37 +1146,30 @@ function HorizonCalibration() {
 }
 
 function StandaloneGame() {
-  const [started, setStarted] = useState(false);
   const [leavingWelcome, setLeavingWelcome] = useState(false);
 
   const startExperience = useCallback(() => {
     if (leavingWelcome) return;
     setLeavingWelcome(true);
-    window.setTimeout(() => setStarted(true), 460);
+    window.setTimeout(() => window.location.assign('/demo'), 460);
   }, [leavingWelcome]);
 
   return (
     <main className="standalone-root standalone-root--phone">
       <div className="standalone-fit">
         <div className="standalone-canvas">
-          {started ? (
-            <div className="welcome-game-enter">
-              <InteractiveTrial />
+          <section className={`welcome-screen${leavingWelcome ? ' is-leaving' : ''}`} aria-label="Welcome to Vyralnet">
+            <div className="welcome-copy">
+              <p>Welcome to</p>
+              <h1>Vyralnet</h1>
+              <span>Compete. Win. Get hired.</span>
             </div>
-          ) : (
-            <section className={`welcome-screen${leavingWelcome ? ' is-leaving' : ''}`} aria-label="Welcome to Vyralnet">
-              <div className="welcome-copy">
-                <p>Welcome to</p>
-                <h1>Vyralnet</h1>
-                <span>Compete. Win. Get hired.</span>
-              </div>
-              <WelcomeHorizon />
-              <button className="welcome-start" type="button" onClick={startExperience}>
-                <span>Get Started</span>
-                <span className="welcome-start__arrow" aria-hidden="true">→</span>
-              </button>
-            </section>
-          )}
+            <WelcomeHorizon />
+            <button className="welcome-start" type="button" onClick={startExperience}>
+              <span>Get Started</span>
+              <span className="welcome-start__arrow" aria-hidden="true">→</span>
+            </button>
+          </section>
         </div>
       </div>
     </main>
@@ -1471,6 +1464,57 @@ function AssetAudit() {
   );
 }
 
+type PreviewKind =
+  | 'welcome'
+  | 'pick'
+  | 'scout'
+  | 'nothing'
+  | 'match'
+  | 'match-active'
+  | 'match-confirming';
+
+function StaticPreview({ kind }: { kind: PreviewKind }) {
+  let screen: ReactNode;
+
+  if (kind === 'welcome') return <StandaloneGame />;
+  if (kind === 'pick') screen = <PickBallScreen mobileMode />;
+  else if (kind === 'scout') screen = <ResultScreen result="scout" mobileMode />;
+  else if (kind === 'nothing') screen = <ResultScreen result="nothing" mobileMode />;
+  else if (kind === 'match-active') screen = <MatchScreen scoutState="active" secondsRemaining={42} mobileMode />;
+  else if (kind === 'match-confirming') screen = <MatchScreen scoutState="confirming" mobileMode />;
+  else screen = <MatchScreen scoutState="available" mobileMode />;
+
+  return (
+    <main className="standalone-root standalone-root--phone">
+      <div className="standalone-fit">
+        <div className="standalone-canvas">
+          <div className="standalone-trial">
+            <div className="trial-screen">{screen}</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export default function Home() {
-  return <StandaloneGame />;
+  const [preview, setPreview] = useState<PreviewKind | null>(null);
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('preview');
+    const supported: PreviewKind[] = [
+      'welcome',
+      'pick',
+      'scout',
+      'nothing',
+      'match',
+      'match-active',
+      'match-confirming',
+    ];
+    // Static preview selection is synchronized once from the browser URL.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPreview(supported.includes(requested as PreviewKind) ? requested as PreviewKind : null);
+  }, []);
+
+  return preview ? <StaticPreview kind={preview} /> : <StandaloneGame />;
 }
